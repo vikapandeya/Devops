@@ -1,0 +1,3889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DevOps Mastery & Interview Guide</title>
+<style>
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface2: #22263a;
+  --border: #2e3250;
+  --accent: #4f8ef7;
+  --accent2: #7c3aed;
+  --green: #10b981;
+  --yellow: #f59e0b;
+  --red: #ef4444;
+  --orange: #f97316;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --code-bg: #0d1117;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  font-size: 15px;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* Layout */
+.wrapper { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 280px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  overflow-y: auto;
+  padding: 20px 0;
+  z-index: 100;
+}
+.sidebar-header {
+  padding: 0 20px 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 10px;
+}
+.sidebar-header h2 { font-size: 14px; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; }
+.sidebar-header p { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.toc-section { padding: 6px 0; }
+.toc-section-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--muted);
+  padding: 8px 20px 4px;
+  font-weight: 700;
+}
+.toc-link {
+  display: block;
+  padding: 5px 20px;
+  font-size: 13px;
+  color: #aab4c8;
+  border-left: 2px solid transparent;
+  transition: all 0.2s;
+}
+.toc-link:hover {
+  color: var(--text);
+  background: var(--surface2);
+  border-left-color: var(--accent);
+  text-decoration: none;
+}
+.toc-sub {
+  padding-left: 34px;
+  font-size: 12px;
+}
+
+.content { margin-left: 280px; max-width: 1100px; padding: 40px; }
+
+/* Hero */
+.hero {
+  background: linear-gradient(135deg, #1a1d27 0%, #0f1535 50%, #1a0a2e 100%);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 50px 40px;
+  margin-bottom: 40px;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -50%; right: -10%;
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(79,142,247,0.1) 0%, transparent 70%);
+  border-radius: 50%;
+}
+.hero h1 { font-size: 36px; font-weight: 800; margin-bottom: 10px; }
+.hero h1 span { color: var(--accent); }
+.hero p { color: var(--muted); font-size: 16px; max-width: 600px; }
+.level-badges { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+.badge {
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+.badge-green { background: rgba(16,185,129,0.15); color: var(--green); border: 1px solid rgba(16,185,129,0.3); }
+.badge-blue { background: rgba(79,142,247,0.15); color: var(--accent); border: 1px solid rgba(79,142,247,0.3); }
+.badge-purple { background: rgba(124,58,237,0.15); color: #a78bfa; border: 1px solid rgba(124,58,237,0.3); }
+.badge-orange { background: rgba(249,115,22,0.15); color: var(--orange); border: 1px solid rgba(249,115,22,0.3); }
+
+/* Role selector */
+.role-selector {
+  display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap;
+}
+.role-btn {
+  padding: 8px 20px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+.role-btn:hover, .role-btn.active {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+/* Section */
+.section {
+  margin-bottom: 60px;
+  scroll-margin-top: 20px;
+}
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.section-icon {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.section-header h2 { font-size: 26px; font-weight: 700; }
+.section-header .level-tag {
+  margin-left: auto;
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+h3 { font-size: 18px; font-weight: 700; margin: 28px 0 12px; color: #c9d4e8; }
+h4 { font-size: 15px; font-weight: 700; margin: 20px 0 8px; color: var(--accent); }
+p { margin-bottom: 12px; color: #c5cee0; }
+ul, ol { margin: 10px 0 16px 20px; }
+li { margin-bottom: 6px; color: #c5cee0; }
+
+/* Code blocks */
+pre {
+  background: var(--code-bg);
+  border: 1px solid #1e2535;
+  border-radius: 8px;
+  padding: 20px;
+  overflow-x: auto;
+  margin: 14px 0;
+  position: relative;
+}
+pre code {
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-size: 13px;
+  color: #a8d8a8;
+  line-height: 1.6;
+}
+.lang-label {
+  position: absolute;
+  top: 8px; right: 12px;
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+code {
+  font-family: 'Cascadia Code', 'Fira Code', monospace;
+  font-size: 13px;
+  background: #1a2035;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #7dd3fc;
+}
+
+/* Boxes */
+.tip-box, .warn-box, .info-box, .danger-box, .success-box {
+  padding: 16px 20px;
+  border-radius: 8px;
+  margin: 16px 0;
+  border-left: 4px solid;
+  font-size: 14px;
+}
+.tip-box { background: rgba(16,185,129,0.08); border-color: var(--green); }
+.tip-box::before { content: "💡 TIP: "; font-weight: 700; color: var(--green); }
+.warn-box { background: rgba(245,158,11,0.08); border-color: var(--yellow); }
+.warn-box::before { content: "⚠️ WARNING: "; font-weight: 700; color: var(--yellow); }
+.info-box { background: rgba(79,142,247,0.08); border-color: var(--accent); }
+.info-box::before { content: "ℹ️ NOTE: "; font-weight: 700; color: var(--accent); }
+.danger-box { background: rgba(239,68,68,0.08); border-color: var(--red); }
+.danger-box::before { content: "🚨 DANGER: "; font-weight: 700; color: var(--red); }
+.success-box { background: rgba(16,185,129,0.08); border-color: var(--green); }
+.success-box::before { content: "✅ "; font-weight: 700; color: var(--green); }
+
+/* Tables */
+table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+th {
+  background: var(--surface2);
+  padding: 10px 14px;
+  text-align: left;
+  font-weight: 700;
+  color: var(--accent);
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--border);
+  color: #c5cee0;
+  vertical-align: top;
+}
+tr:hover td { background: rgba(79,142,247,0.04); }
+.table-wrapper { overflow-x: auto; margin: 16px 0; }
+
+/* Interview Q&A */
+.qa-block { margin: 16px 0; }
+.question {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px 8px 0 0;
+  padding: 14px 18px;
+  font-weight: 600;
+  color: #f0f4ff;
+  cursor: pointer;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.question::before { content: "Q"; color: var(--accent); font-weight: 800; flex-shrink: 0; }
+.answer {
+  background: rgba(79,142,247,0.04);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  padding: 14px 18px;
+  color: #c5cee0;
+  font-size: 14px;
+}
+.answer::before { content: "A: "; font-weight: 700; color: var(--green); }
+
+/* Scenario blocks */
+.scenario {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  margin: 16px 0;
+}
+.scenario-tag {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--orange);
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.scenario h4 { margin-top: 0; color: #f0f4ff; }
+
+/* Steps */
+.steps { counter-reset: step; }
+.step {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  align-items: flex-start;
+}
+.step-num {
+  counter-increment: step;
+  background: var(--accent);
+  color: white;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.step-content { flex: 1; }
+
+/* Project card */
+.project-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 28px;
+  margin: 20px 0;
+}
+.project-card h3 {
+  margin-top: 0;
+  color: var(--accent);
+  font-size: 20px;
+}
+.project-meta {
+  display: flex; gap: 16px; flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.project-meta span {
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  background: var(--surface2);
+  color: var(--muted);
+}
+
+/* Cheat sheet */
+.cheat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin: 16px 0;
+}
+.cheat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px;
+}
+.cheat-card h4 { margin-top: 0; font-size: 14px; color: var(--accent); margin-bottom: 10px; }
+.cheat-card pre { margin: 0; padding: 12px; font-size: 12px; }
+
+/* Roadmap */
+.roadmap-track {
+  position: relative;
+  padding-left: 30px;
+  margin: 20px 0;
+}
+.roadmap-track::before {
+  content: '';
+  position: absolute;
+  left: 10px; top: 0; bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, var(--accent), var(--accent2));
+}
+.roadmap-item {
+  position: relative;
+  margin-bottom: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+}
+.roadmap-item::before {
+  content: '';
+  position: absolute;
+  left: -24px; top: 18px;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--bg);
+}
+.roadmap-phase {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.roadmap-item h4 { margin: 4px 0 8px; color: #f0f4ff; }
+
+/* Diagram */
+.diagram {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  font-family: monospace;
+  font-size: 13px;
+  color: #7dd3fc;
+  overflow-x: auto;
+  margin: 16px 0;
+  line-height: 1.8;
+  white-space: pre;
+}
+
+/* Tabs */
+.tabs { margin: 16px 0; }
+.tab-nav { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: -1px; }
+.tab-btn {
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-bottom: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+  border-radius: 6px 6px 0 0;
+  transition: all 0.2s;
+}
+.tab-btn.active {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text);
+}
+.tab-content { display: none; border: 1px solid var(--border); border-radius: 0 8px 8px 8px; padding: 20px; background: var(--surface); }
+.tab-content.active { display: block; }
+
+/* Progress bar */
+.progress-bar {
+  height: 4px;
+  background: var(--surface2);
+  border-radius: 2px;
+  margin: 8px 0;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+}
+
+/* Comparison grid */
+.compare-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.compare-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+}
+.compare-card h4 { margin-top: 0; font-size: 15px; }
+
+hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+/* Mobile */
+@media (max-width: 900px) {
+  .sidebar { display: none; }
+  .content { margin-left: 0; padding: 20px; }
+}
+
+/* Syntax highlighting colors */
+.kw { color: #c792ea; }
+.str { color: #c3e88d; }
+.cm { color: #546e7a; font-style: italic; }
+.num { color: #f78c6c; }
+.fn { color: #82aaff; }
+.var { color: #ffcb6b; }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-header">
+    <h2>DevOps Mastery</h2>
+    <p>Zero → Job-Ready Guide</p>
+  </div>
+  <div class="toc-section">
+    <div class="toc-section-title">Getting Started</div>
+    <a href="#roadmap" class="toc-link">Learning Roadmap</a>
+    <a href="#linux" class="toc-link">A. Linux</a>
+    <a href="#networking" class="toc-link">B. Networking</a>
+    <a href="#git" class="toc-link">C. Git</a>
+  </div>
+  <div class="toc-section">
+    <div class="toc-section-title">Core DevOps</div>
+    <a href="#cicd" class="toc-link">D. CI/CD</a>
+    <a href="#docker" class="toc-link">E. Docker</a>
+    <a href="#kubernetes" class="toc-link">F. Kubernetes</a>
+  </div>
+  <div class="toc-section">
+    <div class="toc-section-title">Cloud & IaC</div>
+    <a href="#cloud" class="toc-link">G. Cloud (AWS)</a>
+    <a href="#terraform" class="toc-link">H. Terraform</a>
+    <a href="#ansible" class="toc-link">I. Ansible</a>
+  </div>
+  <div class="toc-section">
+    <div class="toc-section-title">Observability</div>
+    <a href="#monitoring" class="toc-link">J. Monitoring</a>
+    <a href="#devsecops" class="toc-link">K. DevSecOps</a>
+    <a href="#sysdesign" class="toc-link">L. System Design</a>
+  </div>
+  <div class="toc-section">
+    <div class="toc-section-title">Interview Prep</div>
+    <a href="#interviews" class="toc-link">Interview Q&A</a>
+    <a href="#projects" class="toc-link">Projects</a>
+    <a href="#cheatsheets" class="toc-link">Cheat Sheets</a>
+    <a href="#resume" class="toc-link">Resume Tips</a>
+    <a href="#errors" class="toc-link">Common Errors</a>
+  </div>
+</nav>
+
+<!-- MAIN CONTENT -->
+<main class="content">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>DevOps <span>Mastery</span> & Interview Guide</h1>
+  <p>A complete, production-grade learning handbook — from Linux basics to Kubernetes, Cloud, and beyond. Covers everything you need to go from zero to job-ready.</p>
+  <div class="level-badges">
+    <span class="badge badge-green">Beginner Friendly</span>
+    <span class="badge badge-blue">Interview Ready</span>
+    <span class="badge badge-purple">Production Grade</span>
+    <span class="badge badge-orange">Real-World Projects</span>
+  </div>
+</div>
+
+<!-- CHOOSE YOUR LEVEL -->
+<div class="section" id="levels">
+  <h3>Choose Your Experience Level</h3>
+  <p style="color:var(--muted);font-size:13px;">Use these filters to focus on what matters for your role:</p>
+  <div class="role-selector">
+    <button class="role-btn active" onclick="setRole('all')">All Levels</button>
+    <button class="role-btn" onclick="setRole('fresher')">Fresher / 0–1 yr</button>
+    <button class="role-btn" onclick="setRole('mid')">2–5 Years</button>
+    <button class="role-btn" onclick="setRole('senior')">Senior / Lead</button>
+  </div>
+  <div class="info-box">Each section is color-coded: <strong>Green = Beginner</strong>, <strong>Blue = Intermediate</strong>, <strong>Purple = Advanced</strong>. All sections are visible by default.</div>
+</div>
+
+<!-- ======================== ROADMAP ======================== -->
+<div class="section" id="roadmap">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(79,142,247,0.15);">🗺️</div>
+    <h2>DevOps Learning Roadmap</h2>
+    <span class="level-tag badge-green badge">All Levels</span>
+  </div>
+
+  <div class="roadmap-track">
+    <div class="roadmap-item">
+      <div class="roadmap-phase" style="color:var(--green)">Phase 1 — Foundation (Month 1–2)</div>
+      <h4>Linux, Networking, Git</h4>
+      <p>Master the OS layer: file system, permissions, processes, shell scripting. Learn TCP/IP, HTTP/DNS basics. Learn Git branching and workflows.</p>
+      <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+    </div>
+    <div class="roadmap-item">
+      <div class="roadmap-phase" style="color:var(--accent)">Phase 2 — Containers & CI/CD (Month 2–4)</div>
+      <h4>Docker, CI/CD Pipelines</h4>
+      <p>Containerize apps, write Dockerfiles, understand Docker networking. Build CI/CD pipelines with Jenkins or GitHub Actions.</p>
+      <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+    </div>
+    <div class="roadmap-item">
+      <div class="roadmap-phase" style="color:var(--accent2)">Phase 3 — Cloud & Orchestration (Month 4–7)</div>
+      <h4>Kubernetes, AWS Core</h4>
+      <p>Deploy workloads on Kubernetes. Learn AWS: EC2, S3, VPC, IAM, RDS. Understand Auto Scaling and Load Balancing.</p>
+      <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+    </div>
+    <div class="roadmap-item">
+      <div class="roadmap-phase" style="color:var(--orange)">Phase 4 — IaC & Config Mgmt (Month 7–9)</div>
+      <h4>Terraform, Ansible</h4>
+      <p>Write Terraform modules, manage state files, remote backends. Automate configuration with Ansible playbooks and roles.</p>
+      <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+    </div>
+    <div class="roadmap-item">
+      <div class="roadmap-phase" style="color:var(--red)">Phase 5 — Observability & Security (Month 9–12)</div>
+      <h4>Monitoring, DevSecOps, System Design</h4>
+      <p>Set up Prometheus + Grafana, ELK stack. Integrate security scanning in pipelines. Design high-availability, zero-downtime systems.</p>
+      <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================== LINUX ======================== -->
+<div class="section" id="linux">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(249,115,22,0.15);">🐧</div>
+    <h2>A. Linux — Foundation of DevOps</h2>
+    <span class="level-tag badge-green badge">Beginner → Advanced</span>
+  </div>
+
+  <p>Linux is the backbone of every DevOps environment. Virtually all servers, containers, and cloud instances run Linux. Mastering it is non-negotiable.</p>
+
+  <div class="tip-box">Real-world analogy: Linux is like a city's road network — everything runs on it whether you see it or not. DevOps engineers work on it daily.</div>
+
+  <h3>File System Hierarchy</h3>
+  <div class="table-wrapper">
+  <table>
+    <tr><th>Directory</th><th>Purpose</th><th>Example Contents</th></tr>
+    <tr><td><code>/</code></td><td>Root of everything</td><td>All directories start here</td></tr>
+    <tr><td><code>/etc</code></td><td>System config files</td><td>nginx.conf, passwd, hosts</td></tr>
+    <tr><td><code>/var</code></td><td>Variable data (logs, caches)</td><td>/var/log/syslog</td></tr>
+    <tr><td><code>/home</code></td><td>User home dirs</td><td>/home/ubuntu</td></tr>
+    <tr><td><code>/usr</code></td><td>User programs</td><td>/usr/bin, /usr/lib</td></tr>
+    <tr><td><code>/tmp</code></td><td>Temporary files</td><td>Cleared on reboot</td></tr>
+    <tr><td><code>/proc</code></td><td>Virtual filesystem (kernel info)</td><td>/proc/cpuinfo, /proc/meminfo</td></tr>
+    <tr><td><code>/opt</code></td><td>Optional software</td><td>Manual installs</td></tr>
+  </table>
+  </div>
+
+  <h3>File Permissions (Deep Dive)</h3>
+  <pre><code><span class="cm"># Permission format: [type][owner][group][other]</span>
+<span class="cm"># Example: -rwxr-xr-- 1 ubuntu devops 2048 Apr 21 app.sh</span>
+
+<span class="cm"># Breakdown:</span>
+-        <span class="cm"># file type (- = file, d = dir, l = symlink)</span>
+rwx      <span class="cm"># owner: read(4), write(2), execute(1) = 7</span>
+r-x      <span class="cm"># group: read(4) + execute(1) = 5</span>
+r--      <span class="cm"># other: read(4) = 4</span>
+
+<span class="cm"># Octal: 754</span>
+chmod 754 app.sh
+chmod u+x app.sh          <span class="cm"># add execute for owner</span>
+chmod go-w sensitive.conf <span class="cm"># remove write from group+other</span>
+chown ubuntu:devops app.sh
+chown -R www-data /var/www</code></pre>
+
+  <div class="warn-box">Never set 777 on files in production. Use least-privilege permissions. 644 for files, 755 for directories is the standard.</div>
+
+  <h3>Essential Linux Commands</h3>
+  <div class="cheat-grid">
+    <div class="cheat-card">
+      <h4>File Operations</h4>
+<pre><code>ls -lah          # detailed list
+find / -name "*.log" -mtime -7
+cp -r src/ dst/
+mv file.txt /tmp/
+rm -rf /tmp/old/
+ln -s /path target # symlink
+stat file.txt    # full metadata</code></pre>
+    </div>
+    <div class="cheat-card">
+      <h4>Text Processing</h4>
+<pre><code>grep -rn "ERROR" /var/log/
+grep -E "warn|error" app.log
+awk '{print $1,$7}' access.log
+sed 's/old/new/g' file.txt
+tail -f /var/log/syslog
+cut -d: -f1 /etc/passwd
+sort -k2 -n data.txt | uniq -c</code></pre>
+    </div>
+    <div class="cheat-card">
+      <h4>Process Management</h4>
+<pre><code>ps aux | grep nginx
+top -d 2        # refresh every 2s
+htop            # interactive
+kill -9 PID
+pkill nginx
+nohup ./app.sh &amp;  # run in bg
+jobs; fg 1; bg 1</code></pre>
+    </div>
+    <div class="cheat-card">
+      <h4>Disk &amp; Memory</h4>
+<pre><code>df -h           # disk usage
+du -sh /var/log/*
+free -m         # memory
+lsblk           # block devices
+fdisk -l        # partitions
+mount /dev/sdb1 /data
+vmstat 1 5      # VM stats</code></pre>
+    </div>
+    <div class="cheat-card">
+      <h4>Networking</h4>
+<pre><code>ip addr show
+ip route show
+ss -tulpn       # open ports
+netstat -tulpn
+curl -I http://example.com
+wget -O file.tar.gz URL
+traceroute 8.8.8.8
+nslookup google.com</code></pre>
+    </div>
+    <div class="cheat-card">
+      <h4>System Info</h4>
+<pre><code>uname -a        # kernel info
+lscpu           # CPU details
+cat /proc/meminfo
+uptime
+who; w          # logged in users
+last -n 10      # login history
+dmesg | tail -20</code></pre>
+    </div>
+  </div>
+
+  <h3>Shell Scripting — Beginner to Advanced</h3>
+
+  <h4>Beginner: Basic Script Structure</h4>
+  <pre><code>#!/bin/bash
+<span class="cm"># Script: deploy.sh</span>
+set -e          <span class="cm"># exit on any error</span>
+set -u          <span class="cm"># treat unset vars as error</span>
+set -o pipefail <span class="cm"># catch pipe errors</span>
+
+APP_NAME="myapp"
+VERSION=$1      <span class="cm"># first argument</span>
+
+echo "Deploying $APP_NAME version $VERSION"
+
+if [[ -z "$VERSION" ]]; then
+  echo "ERROR: version required"
+  exit 1
+fi
+
+echo "Done!"</code></pre>
+
+  <h4>Intermediate: Functions, Loops, Error Handling</h4>
+  <pre><code>#!/bin/bash
+set -euo pipefail
+
+log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }
+die() { log "ERROR: $*" >&amp;2; exit 1; }
+
+check_service() {
+  local service=$1
+  systemctl is-active --quiet "$service" \
+    &amp;&amp; log "$service is running" \
+    || die "$service is not running"
+}
+
+deploy_app() {
+  local env=$1
+  local services=("nginx" "postgresql" "redis")
+
+  log "Starting deployment to $env"
+
+  for svc in "${services[@]}"; do
+    check_service "$svc"
+  done
+
+  <span class="cm"># Pull latest code</span>
+  cd /var/www/myapp
+  git pull origin main
+
+  <span class="cm"># Restart app</span>
+  systemctl restart myapp
+  log "Deployment complete!"
+}
+
+deploy_app "${1:-production}"</code></pre>
+
+  <h4>Advanced: System Health Check Script</h4>
+  <pre><code>#!/bin/bash
+set -euo pipefail
+
+THRESHOLD_CPU=80
+THRESHOLD_MEM=85
+THRESHOLD_DISK=90
+ALERT_EMAIL="ops@company.com"
+
+get_cpu_usage() {
+  top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1 | cut -d',' -f1
+}
+
+get_mem_usage() {
+  free | grep Mem | awk '{printf "%.0f", $3/$2 * 100}'
+}
+
+get_disk_usage() {
+  df -h / | awk 'NR==2 {print $5}' | tr -d '%'
+}
+
+send_alert() {
+  local metric=$1 value=$2 threshold=$3
+  echo "ALERT: $metric is at ${value}% (threshold: ${threshold}%)" \
+    | mail -s "Server Alert: $metric High" "$ALERT_EMAIL"
+}
+
+main() {
+  local cpu mem disk
+  cpu=$(get_cpu_usage)
+  mem=$(get_mem_usage)
+  disk=$(get_disk_usage)
+
+  echo "CPU: ${cpu}% | MEM: ${mem}% | DISK: ${disk}%"
+
+  [[ ${cpu%.*} -gt $THRESHOLD_CPU ]] &amp;&amp; send_alert "CPU" "$cpu" "$THRESHOLD_CPU"
+  [[ $mem -gt $THRESHOLD_MEM ]]     &amp;&amp; send_alert "Memory" "$mem" "$THRESHOLD_MEM"
+  [[ $disk -gt $THRESHOLD_DISK ]]   &amp;&amp; send_alert "Disk" "$disk" "$THRESHOLD_DISK"
+}
+
+main</code></pre>
+
+  <h3>Cron Jobs</h3>
+  <pre><code><span class="cm"># Format: minute hour day month weekday command</span>
+<span class="cm">#         *      *    *   *     *       command</span>
+
+crontab -e   <span class="cm"># edit current user crons</span>
+crontab -l   <span class="cm"># list crons</span>
+
+<span class="cm"># Examples:</span>
+0 2 * * *     /opt/scripts/backup.sh      <span class="cm"># daily 2AM</span>
+*/5 * * * *   /opt/scripts/health.sh      <span class="cm"># every 5 mins</span>
+0 9 * * 1-5   /opt/scripts/report.sh      <span class="cm"># weekdays 9AM</span>
+0 0 1 * *     /opt/scripts/monthly.sh     <span class="cm"># 1st of month</span>
+
+<span class="cm"># Log cron output:</span>
+* * * * * /script.sh >> /var/log/cron.log 2>&amp;1</code></pre>
+
+  <h3>Package Management</h3>
+  <div class="table-wrapper">
+  <table>
+    <tr><th>Task</th><th>Ubuntu/Debian (apt)</th><th>RHEL/CentOS (yum/dnf)</th></tr>
+    <tr><td>Update repos</td><td><code>apt update</code></td><td><code>yum check-update</code></td></tr>
+    <tr><td>Install</td><td><code>apt install nginx</code></td><td><code>yum install nginx</code></td></tr>
+    <tr><td>Remove</td><td><code>apt remove nginx</code></td><td><code>yum remove nginx</code></td></tr>
+    <tr><td>Search</td><td><code>apt search nginx</code></td><td><code>yum search nginx</code></td></tr>
+    <tr><td>List installed</td><td><code>dpkg -l</code></td><td><code>rpm -qa</code></td></tr>
+    <tr><td>Upgrade all</td><td><code>apt upgrade</code></td><td><code>yum update</code></td></tr>
+  </table>
+  </div>
+
+  <h3>System Performance Monitoring</h3>
+  <pre><code><span class="cm"># CPU & Memory</span>
+vmstat 1 10          <span class="cm"># system stats every 1s, 10 times</span>
+iostat -xz 1         <span class="cm"># disk I/O stats</span>
+sar -u 1 5           <span class="cm"># CPU utilization (sysstat)</span>
+
+<span class="cm"># Network</span>
+iftop                <span class="cm"># real-time network bandwidth</span>
+nethogs              <span class="cm"># per-process network usage</span>
+ss -s                <span class="cm"># socket summary stats</span>
+
+<span class="cm"># Disk I/O</span>
+iotop                <span class="cm"># per-process disk I/O</span>
+dstat -cdngy         <span class="cm"># combined stats</span>
+
+<span class="cm"># Tracing</span>
+strace -p PID        <span class="cm"># system calls of process</span>
+lsof -p PID          <span class="cm"># open files by process</span>
+perf top             <span class="cm"># CPU profiling</span></code></pre>
+
+  <h3>Interview Questions — Linux</h3>
+  <div class="qa-block">
+    <div class="question">What is the difference between a process and a thread in Linux?</div>
+    <div class="answer">A process is an independent program with its own memory space, PID, and resources. A thread is a lightweight unit of execution within a process, sharing the same memory space. Threads are faster to create/switch between but share data, requiring synchronization (mutexes). In Linux, both are managed via <code>clone()</code> syscall; <code>ps aux</code> shows processes, <code>ps -eLf</code> shows threads.</div>
+  </div>
+  <div class="qa-block">
+    <div class="question">How do you troubleshoot a server that is running out of disk space?</div>
+    <div class="answer">1) Run <code>df -h</code> to identify the full filesystem. 2) Run <code>du -sh /var/log/* | sort -rh | head -20</code> to find the largest directories. 3) Check for large log files: <code>find /var/log -size +100M</code>. 4) Check deleted-but-open files: <code>lsof | grep deleted</code> — processes may hold references to deleted files. 5) Truncate logs or rotate: <code>logrotate -f /etc/logrotate.conf</code>. 6) Consider adding disk or archiving old data.</div>
+  </div>
+  <div class="qa-block">
+    <div class="question">Explain Linux load average. What does "5.5 3.2 1.1" mean?</div>
+    <div class="answer">Load average shows the average number of processes in runnable or uninterruptible sleep state over 1, 5, and 15 minutes. "5.5 3.2 1.1" means load is increasing (1-min is highest). On a 4-core system, a load of 4.0 means 100% utilization — 5.5 means you're overloaded. Rule: if load average consistently exceeds number of CPU cores, investigate with <code>top</code>, <code>vmstat</code>, and <code>iostat</code>.</div>
+  </div>
+  <div class="qa-block">
+    <div class="question">What happens when you run a command in Linux? (Process lifecycle)</div>
+    <div class="answer">1) Shell forks a child process via <code>fork()</code>. 2) Child calls <code>exec()</code> to load the binary. 3) Kernel creates process, assigns PID, allocates memory. 4) Process runs, makes system calls for I/O etc. 5) Process exits via <code>exit()</code>. 6) Parent receives SIGCHLD, calls <code>wait()</code> to collect exit status. If parent doesn't wait, child becomes a zombie process.</div>
+  </div>
+
+  <div class="scenario">
+    <div class="scenario-tag">Scenario — Senior Level</div>
+    <h4>SSH into a server and find it's unresponsive. How do you diagnose?</h4>
+    <p><strong>Step 1:</strong> Check if SSH daemon is running: <code>systemctl status sshd</code></p>
+    <p><strong>Step 2:</strong> Check system load: <code>uptime</code> or <code>w</code></p>
+    <p><strong>Step 3:</strong> Look for zombie processes or runaway processes: <code>ps aux | awk '$8=="Z"'</code></p>
+    <p><strong>Step 4:</strong> Check memory pressure: <code>free -m</code> and <code>cat /proc/meminfo | grep -i swap</code></p>
+    <p><strong>Step 5:</strong> Check OOM killer: <code>dmesg | grep -i "killed process"</code></p>
+    <p><strong>Step 6:</strong> Check disk full: <code>df -h</code> and <code>df -i</code> (inodes!)</p>
+    <p><strong>Step 7:</strong> Review recent syslog: <code>tail -200 /var/log/syslog</code></p>
+  </div>
+
+  <div class="tip-box">Mini Task: Write a bash script that monitors disk usage every 5 minutes and sends an alert if any partition exceeds 80% capacity. Use cron to schedule it.</div>
+
+</div>
+
+<!-- ======================== NETWORKING ======================== -->
+<div class="section" id="networking">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(16,185,129,0.15);">🌐</div>
+    <h2>B. Networking for DevOps</h2>
+    <span class="level-tag badge-blue badge">Beginner → Advanced</span>
+  </div>
+
+  <h3>OSI vs TCP/IP Model</h3>
+  <div class="table-wrapper">
+  <table>
+    <tr><th>OSI Layer</th><th>Name</th><th>TCP/IP Layer</th><th>Protocols/Examples</th></tr>
+    <tr><td>7</td><td>Application</td><td rowspan="3">Application</td><td>HTTP, HTTPS, DNS, SSH, FTP</td></tr>
+    <tr><td>6</td><td>Presentation</td><td>SSL/TLS, encoding</td></tr>
+    <tr><td>5</td><td>Session</td><td>Session management</td></tr>
+    <tr><td>4</td><td>Transport</td><td>Transport</td><td>TCP (reliable), UDP (fast)</td></tr>
+    <tr><td>3</td><td>Network</td><td>Internet</td><td>IP, ICMP, routing</td></tr>
+    <tr><td>2</td><td>Data Link</td><td rowspan="2">Network Access</td><td>Ethernet, MAC addresses, ARP</td></tr>
+    <tr><td>1</td><td>Physical</td><td>Cables, signals, NICs</td></tr>
+  </table>
+  </div>
+
+  <div class="tip-box">Memory trick for OSI layers: "All People Seem To Need Data Processing" (Application → Physical)</div>
+
+  <h3>TCP vs UDP Deep Dive</h3>
+  <div class="compare-grid">
+    <div class="compare-card">
+      <h4 style="color:var(--green)">TCP — Reliable</h4>
+      <ul>
+        <li>Connection-oriented (3-way handshake)</li>
+        <li>Guaranteed delivery &amp; ordering</li>
+        <li>Flow control &amp; congestion control</li>
+        <li>Used by: HTTP, SSH, FTP, SMTP</li>
+        <li>Higher overhead</li>
+      </ul>
+    </div>
+    <div class="compare-card">
+      <h4 style="color:var(--orange)">UDP — Fast</h4>
+      <ul>
+        <li>Connectionless — fire and forget</li>
+        <li>No guarantee of delivery or order</li>
+        <li>Used by: DNS, video streaming, gaming</li>
+        <li>Lower overhead, faster</li>
+        <li>App handles reliability if needed</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>TCP 3-Way Handshake</h3>
+  <div class="diagram">Client                    Server
+  |                            |
+  |------- SYN (seq=x) ------->|   Client wants to connect
+  |                            |
+  |<-- SYN-ACK (seq=y,ack=x+1)|   Server acknowledges
+  |                            |
+  |------- ACK (ack=y+1) ----->|   Connection established
+  |                            |
+  |======= DATA TRANSFER =======|
+  |                            |
+  |------- FIN ---------------->|   Client done
+  |<------- FIN-ACK ------------|
+  |------- ACK ---------------->|   4-way close</div>
+
+  <h3>DNS Resolution Flow</h3>
+  <div class="diagram">Browser                Recursive         Root       TLD        Auth
+  (your PC)              Resolver          Server     Server     Nameserver
+     |                      |                |           |           |
+     |-- query: google.com ->|                |           |           |
+     |                      |-- ask root? -->|           |           |
+     |                      |<-- .com NS ---|            |           |
+     |                      |-- ask .com? ------------->|            |
+     |                      |<-- google.com NS ---------|            |
+     |                      |-- ask google's NS? ------------------->|
+     |                      |<-- 142.250.x.x IP --------------------|
+     |<--- 142.250.x.x ------|</div>
+
+  <h3>HTTP vs HTTPS</h3>
+  <pre><code><span class="cm"># Check TLS certificate</span>
+openssl s_client -connect google.com:443 -showcerts
+openssl x509 -in cert.pem -text -noout
+
+<span class="cm"># HTTP request anatomy</span>
+curl -v https://api.example.com/users \
+  -H "Authorization: Bearer TOKEN" \
+  -H "Content-Type: application/json"
+
+<span class="cm"># Status codes (must know for interviews!)</span>
+200 OK, 201 Created, 204 No Content
+301 Permanent Redirect, 302 Temporary
+400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found
+429 Too Many Requests
+500 Internal Server Error, 502 Bad Gateway, 503 Service Unavailable, 504 Gateway Timeout</code></pre>
+
+  <h3>Load Balancing</h3>
+  <div class="table-wrapper">
+  <table>
+    <tr><th>Algorithm</th><th>How it works</th><th>Best for</th></tr>
+    <tr><td>Round Robin</td><td>Distributes requests sequentially</td><td>Uniform servers</td></tr>
+    <tr><td>Least Connections</td><td>Sends to server with fewest active connections</td><td>Long-lived connections</td></tr>
+    <tr><td>IP Hash</td><td>Routes based on client IP hash (sticky sessions)</td><td>Stateful apps</td></tr>
+    <tr><td>Weighted RR</td><td>Proportional to server capacity</td><td>Mixed capacity servers</td></tr>
+    <tr><td>Health-check aware</td><td>Only routes to healthy backends</td><td>Production always</td></tr>
+  </table>
+  </div>
+
+  <h3>Networking Troubleshooting Commands</h3>
+  <pre><code><span class="cm"># Connectivity</span>
+ping -c 4 8.8.8.8                    <span class="cm"># basic reachability</span>
+traceroute -n 8.8.8.8                <span class="cm"># path tracing</span>
+mtr --report 8.8.8.8                 <span class="cm"># combined ping+traceroute</span>
+
+<span class="cm"># DNS</span>
+dig google.com                        <span class="cm"># full DNS lookup</span>
+dig @8.8.8.8 google.com              <span class="cm"># use specific DNS server</span>
+dig google.com +trace                <span class="cm"># follow delegation chain</span>
+nslookup google.com
+
+<span class="cm"># Port/service</span>
+nc -zv host 80                       <span class="cm"># test port open</span>
+telnet host 22                       <span class="cm"># test connection</span>
+ss -tulpn | grep :80                 <span class="cm"># what's on port 80</span>
+
+<span class="cm"># Packet capture</span>
+tcpdump -i eth0 port 80 -w cap.pcap  <span class="cm"># capture to file</span>
+tcpdump -i eth0 'host 10.0.0.1'      <span class="cm"># filter by host</span>
+wireshark cap.pcap                   <span class="cm"># GUI analysis</span>
+
+<span class="cm"># Firewall</span>
+iptables -L -n -v                    <span class="cm"># list rules</span>
+ufw status verbose                   <span class="cm"># Ubuntu firewall status</span>
+ufw allow 22/tcp</code></pre>
+
+  <h3>Interview Questions — Networking</h3>
+  <div class="qa-block">
+    <div class="question">What is the difference between a reverse proxy and a load balancer?</div>
+    <div class="answer">A reverse proxy sits in front of servers, receiving client requests and forwarding them to backend servers — it hides server identity and can do SSL termination, caching, compression (e.g., Nginx as reverse proxy). A load balancer specifically distributes traffic across multiple servers for availability and scalability (e.g., AWS ELB). In practice, tools like Nginx and HAProxy can do both simultaneously.</div>
+  </div>
+  <div class="qa-block">
+    <div class="question">A user reports the website is slow. How do you debug it?</div>
+    <div class="answer">Systematic approach: 1) Check if issue is DNS: <code>dig</code> to verify resolution time. 2) Check TTFB (Time to First Byte) with <code>curl -w "%{time_total}"</code>. 3) Check server CPU/memory: <code>top</code>, <code>free</code>. 4) Check database queries (slow query log). 5) Check network latency with <code>traceroute</code>. 6) Check application logs for errors. 7) Check CDN or cache hit rates. 8) Use Chrome DevTools network waterfall for frontend analysis.</div>
+  </div>
+
+  <div class="tip-box">Mini Task: Use <code>curl -w "@curl-format.txt" -o /dev/null -s URL</code> to measure DNS lookup, connection, and transfer times for any website.</div>
+</div>
+
+<!-- ======================== GIT ======================== -->
+<div class="section" id="git">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(124,58,237,0.15);">🌿</div>
+    <h2>C. Git — Version Control Mastery</h2>
+    <span class="level-tag badge-blue badge">Beginner → Advanced</span>
+  </div>
+
+  <div class="tip-box">Real-world analogy: Git is like a time machine + parallel universe manager for your code. Every commit is a save point, every branch is an alternate timeline.</div>
+
+  <h3>How Git Stores Data Internally</h3>
+  <div class="diagram">Working         Staging Area       Local Repo        Remote
+Directory       (Index)            (.git/)           (GitHub)
+   |                |                  |                 |
+   |-- git add ---->|                  |                 |
+   |                |-- git commit --->|                 |
+   |                |                  |-- git push ---->|
+   |<------- git checkout ------------|                 |
+   |                |                  |<-- git fetch ---|
+   |                |                  |                 |
+
+Git Objects (.git/objects/):
+  BLOB    = file content (by SHA hash)
+  TREE    = directory structure
+  COMMIT  = snapshot + metadata + parent pointer
+  TAG     = named commit reference</div>
+
+  <h3>Essential Git Commands</h3>
+  <pre><code><span class="cm"># Setup</span>
+git config --global user.name "Your Name"
+git config --global user.email "you@example.com"
+git config --global core.editor "vim"
+
+<span class="cm"># Daily workflow</span>
+git status
+git diff                   <span class="cm"># unstaged changes</span>
+git diff --staged          <span class="cm"># staged changes</span>
+git add -p                 <span class="cm"># interactive staging (patch mode)</span>
+git commit -m "feat: add login page"
+git log --oneline --graph --all
+
+<span class="cm"># Branching</span>
+git branch feature/login
+git checkout -b feature/login  <span class="cm"># create + switch</span>
+git switch -c feature/login    <span class="cm"># modern syntax</span>
+git branch -d feature/login    <span class="cm"># delete merged branch</span>
+git branch -D feature/login    <span class="cm"># force delete</span>
+
+<span class="cm"># Remote</span>
+git remote -v
+git fetch origin
+git pull origin main --rebase  <span class="cm"># preferred in teams</span>
+git push -u origin feature/login
+git push origin --delete old-branch</code></pre>
+
+  <h3>Merge vs Rebase</h3>
+  <div class="compare-grid">
+    <div class="compare-card">
+      <h4 style="color:var(--accent)">git merge</h4>
+      <ul>
+        <li>Creates a merge commit</li>
+        <li>Preserves full history</li>
+        <li>Non-destructive</li>
+        <li>Can clutter history</li>
+        <li>Use for: feature → main merges</li>
+      </ul>
+      <pre><code>git checkout main
+git merge feature/login</code></pre>
+    </div>
+    <div class="compare-card">
+      <h4 style="color:var(--orange)">git rebase</h4>
+      <ul>
+        <li>Rewrites commit history</li>
+        <li>Cleaner linear history</li>
+        <li>Destructive if shared</li>
+        <li>Never rebase public branches</li>
+        <li>Use for: updating feature branch</li>
+      </ul>
+      <pre><code>git checkout feature/login
+git rebase main</code></pre>
+    </div>
+  </div>
+
+  <div class="warn-box">Golden rule: Never rebase commits that have been pushed to a shared/public branch. It rewrites history and breaks other people's work.</div>
+
+  <h3>Conflict Resolution — Step by Step</h3>
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div class="step-content">Run <code>git merge feature/login</code> — git reports conflicts</div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-content">Run <code>git status</code> to see conflicting files</div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-content">Open conflicting file — look for conflict markers:</div></div>
+  </div>
+  <pre><code>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD (current branch)
+const port = 3000;
+=======
+const port = 8080;
+&gt;&gt;&gt;&gt;&gt;&gt;&gt; feature/login (incoming branch)</code></pre>
+  <div class="steps">
+    <div class="step"><div class="step-num">4</div><div class="step-content">Edit the file to keep the correct version, remove all markers</div></div>
+    <div class="step"><div class="step-num">5</div><div class="step-content"><code>git add app.js</code> — mark as resolved</div></div>
+    <div class="step"><div class="step-num">6</div><div class="step-content"><code>git commit</code> — complete the merge</div></div>
+  </div>
+
+  <h3>Branching Strategies</h3>
+  <div class="table-wrapper">
+  <table>
+    <tr><th>Strategy</th><th>Branches</th><th>Best for</th><th>Release cycle</th></tr>
+    <tr><td>Git Flow</td><td>main, develop, feature/*, release/*, hotfix/*</td><td>Versioned products, software releases</td><td>Scheduled</td></tr>
+    <tr><td>Trunk-Based</td><td>main only + short-lived feature branches</td><td>CI/CD, SaaS, high-frequency deploys</td><td>Continuous</td></tr>
+    <tr><td>GitHub Flow</td><td>main + feature branches + PRs</td><td>Web apps, small teams</td><td>Continuous</td></tr>
+    <tr><td>GitLab Flow</td><td>main + environment branches (staging/prod)</td><td>Multi-environment deployments</td><td>Continuous</td></tr>
+  </table>
+  </div>
+
+  <h3>Advanced Git Commands</h3>
+  <pre><code><span class="cm"># Undo operations</span>
+git revert HEAD            <span class="cm"># safe undo (creates new commit)</span>
+git reset --soft HEAD~1    <span class="cm"># undo commit, keep staged</span>
+git reset --mixed HEAD~1   <span class="cm"># undo commit, keep unstaged</span>
+git reset --hard HEAD~1    <span class="cm"># undo commit, DISCARD changes</span>
+
+<span class="cm"># Stash</span>
+git stash                  <span class="cm"># save dirty work</span>
+git stash pop              <span class="cm"># restore latest stash</span>
+git stash list             <span class="cm"># list all stashes</span>
+git stash apply stash@{2}  <span class="cm"># apply specific stash</span>
+
+<span class="cm"># Cherry-pick</span>
+git cherry-pick abc1234    <span class="cm"># apply specific commit</span>
+git cherry-pick A..B       <span class="cm"># apply range of commits</span>
+
+<span class="cm"># Bisect (find bad commit)</span>
+git bisect start
+git bisect bad             <span class="cm"># current commit is broken</span>
+git bisect good v1.0       <span class="cm"># v1.0 was working</span>
+<span class="cm"># git tests each commit automatically</span>
+git bisect reset
+
+<span class="cm"># Tags</span>
+git tag -a v1.0.0 -m "Release 1.0.0"
+git push origin v1.0.0
+
+<span class="cm"># Clean up</span>
+git gc                     <span class="cm"># garbage collect</span>
+git remote prune origin    <span class="cm"># remove stale remote refs</span></code></pre>
+
+  <h3>Interview Questions — Git</h3>
+  <div class="qa-block">
+    <div class="question">What is git cherry-pick and when would you use it?</div>
+    <div class="answer">Cherry-pick applies a specific commit from one branch to another without merging the entire branch. Use case: a critical bug fix was committed on a feature branch — you cherry-pick just that commit to main/production without merging unfinished features. Be careful: cherry-picking creates a new commit with a different SHA, which can cause issues if the original branch is later merged.</div>
+  </div>
+  <div class="qa-block">
+    <div class="question">What is git reflog and when would you use it?</div>
+    <div class="answer">Reflog records every change to HEAD (even resets and rebases). It's your safety net when you think you've lost commits. Run <code>git reflog</code> to see the history of HEAD movements, find the commit SHA you need, then <code>git checkout SHA</code> or <code>git reset --hard SHA</code> to recover. Reflog entries expire after 90 days by default.</div>
+  </div>
+</div>
+
+
+<!-- PART 2: CI/CD, Docker, Kubernetes -->
+<!-- This file will be merged into the final guide -->
+
+<!-- ======================== CI/CD ======================== -->
+<div class="section" id="cicd">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(79,142,247,0.15);">⚙️</div>
+    <h2>D. CI/CD — The Heart of DevOps</h2>
+    <span class="level-tag badge-blue badge">Intermediate</span>
+  </div>
+
+  <div class="tip-box">Real-world analogy: CI/CD is like a factory assembly line. Code goes in one end, automated tests run, and production-ready software comes out the other — reliably, every time.</div>
+
+  <h3>Pipeline Lifecycle</h3>
+  <div class="diagram">Developer                CI Server              Registry        Production
+    |                       |                      |               |
+    |-- git push ---------->|                       |               |
+    |                       |-- checkout code       |               |
+    |                       |-- lint/code quality   |               |
+    |                       |-- unit tests          |               |
+    |                       |-- build artifact      |               |
+    |                       |-- integration tests   |               |
+    |                       |-- security scan       |               |
+    |                       |-- build Docker image  |               |
+    |                       |-- push image -------->|               |
+    |                       |-- deploy to staging   |               |
+    |                       |-- smoke tests         |               |
+    |                       |-- deploy to prod ---->|               |
+    |<-- notification -------|                      |               |</div>
+
+  <h3>Jenkins — Freestyle vs Pipeline</h3>
+
+  <h4>Jenkinsfile (Declarative Pipeline)</h4>
+  <pre><code>pipeline {
+  agent any
+
+  environment {
+    APP_NAME    = 'myapp'
+    DOCKER_REPO = 'myorg/myapp'
+    SONAR_TOKEN = credentials('sonar-token')
+  }
+
+  stages {
+    stage('Checkout') {
+      steps {
+        git branch: 'main', url: 'https://github.com/org/repo.git'
+      }
+    }
+
+    stage('Build') {
+      steps {
+        sh 'mvn clean package -DskipTests'
+      }
+    }
+
+    stage('Test') {
+      parallel {
+        stage('Unit Tests') {
+          steps { sh 'mvn test' }
+        }
+        stage('Lint') {
+          steps { sh 'npm run lint' }
+        }
+      }
+    }
+
+    stage('Code Quality') {
+      steps {
+        withSonarQubeEnv('SonarQube') {
+          sh 'mvn sonar:sonar'
+        }
+      }
+    }
+
+    stage('Quality Gate') {
+      steps {
+        timeout(time: 5, unit: 'MINUTES') {
+          waitForQualityGate abortPipeline: true
+        }
+      }
+    }
+
+    stage('Docker Build & Push') {
+      steps {
+        script {
+          def image = docker.build("${DOCKER_REPO}:${BUILD_NUMBER}")
+          docker.withRegistry('https://registry.hub.docker.com', 'dockerhub-creds') {
+            image.push()
+            image.push('latest')
+          }
+        }
+      }
+    }
+
+    stage('Deploy to Staging') {
+      steps {
+        sh """
+          kubectl set image deployment/myapp \
+            myapp=${DOCKER_REPO}:${BUILD_NUMBER} \
+            --namespace=staging
+          kubectl rollout status deployment/myapp --namespace=staging
+        """
+      }
+    }
+
+    stage('Deploy to Production') {
+      when {
+        branch 'main'
+      }
+      input {
+        message "Deploy to production?"
+        ok "Deploy"
+      }
+      steps {
+        sh """
+          kubectl set image deployment/myapp \
+            myapp=${DOCKER_REPO}:${BUILD_NUMBER} \
+            --namespace=production
+          kubectl rollout status deployment/myapp --namespace=production
+        """
+      }
+    }
+  }
+
+  post {
+    always {
+      junit '**/target/surefire-reports/*.xml'
+      archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+    }
+    success {
+      slackSend color: 'good', message: "Build ${BUILD_NUMBER} deployed successfully"
+    }
+    failure {
+      slackSend color: 'danger', message: "Build ${BUILD_NUMBER} FAILED"
+      emailext body: '${BUILD_LOG}', subject: 'Build Failed', to: 'team@company.com'
+    }
+  }
+}</code></pre>
+
+  <h3>GitHub Actions</h3>
+  <pre><code># .github/workflows/ci-cd.yml
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18, 20]   # test on multiple versions
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linter
+        run: npm run lint
+
+      - name: Run tests with coverage
+        run: npm test -- --coverage
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
+
+  build-and-push:
+    runs-on: ubuntu-latest
+    needs: [test, security-scan]
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha
+            type=raw,value=latest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    environment: production  # requires manual approval in GitHub
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to Kubernetes
+        uses: azure/k8s-deploy@v4
+        with:
+          manifests: k8s/deployment.yaml
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}</code></pre>
+
+  <h3>GitLab CI</h3>
+  <pre><code># .gitlab-ci.yml
+stages:
+  - test
+  - build
+  - security
+  - deploy
+
+variables:
+  DOCKER_TLS_CERTDIR: "/certs"
+  IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+
+test:unit:
+  stage: test
+  image: node:20-alpine
+  cache:
+    paths: [node_modules/]
+  script:
+    - npm ci
+    - npm test
+  coverage: '/Coverage:\s(\d+\.\d+)%/'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage/cobertura-coverage.xml
+
+build:docker:
+  stage: build
+  image: docker:24
+  services:
+    - docker:24-dind
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t $IMAGE_TAG .
+    - docker push $IMAGE_TAG
+
+security:scan:
+  stage: security
+  image: aquasec/trivy:latest
+  script:
+    - trivy image --exit-code 1 --severity HIGH,CRITICAL $IMAGE_TAG
+
+deploy:staging:
+  stage: deploy
+  environment:
+    name: staging
+    url: https://staging.myapp.com
+  script:
+    - kubectl set image deployment/myapp myapp=$IMAGE_TAG -n staging
+  only:
+    - develop
+
+deploy:production:
+  stage: deploy
+  environment:
+    name: production
+    url: https://myapp.com
+  script:
+    - kubectl set image deployment/myapp myapp=$IMAGE_TAG -n production
+  when: manual
+  only:
+    - main</code></pre>
+
+  <h3>Interview Questions — CI/CD</h3>
+  <div class="qa-block">
+    <div class="question">What is the difference between Continuous Integration, Continuous Delivery, and Continuous Deployment?</div>
+    <div class="answer"><strong>CI:</strong> Developers merge code frequently (multiple times/day). Each merge triggers automated build and tests. Goal: detect integration issues early. <br><strong>CD (Delivery):</strong> Every successful build is automatically prepared for production release, but requires manual approval to actually deploy. <br><strong>CD (Deployment):</strong> Every successful build that passes tests is automatically deployed to production without human intervention. Requires excellent test coverage and monitoring.</div>
+  </div>
+  <div class="qa-block">
+    <div class="question">How do you handle secrets in CI/CD pipelines?</div>
+    <div class="answer">Never hardcode secrets. Use: 1) CI/CD platform's secret store (GitHub Secrets, GitLab CI Variables, Jenkins Credentials). 2) HashiCorp Vault integration — pipeline fetches secrets at runtime. 3) AWS Secrets Manager / Parameter Store for cloud deployments. 4) Environment-specific secrets injected at deploy time. Always audit secret access, rotate regularly, and scan code with tools like truffleHog or gitleaks to detect accidentally committed secrets.</div>
+  </div>
+  <div class="qa-block">
+    <div class="question">Your pipeline takes 45 minutes to run. How do you optimize it?</div>
+    <div class="answer">1) Parallelize: run tests in matrix, separate stages concurrently. 2) Cache dependencies (node_modules, Maven .m2, pip cache). 3) Use incremental builds — only rebuild changed modules. 4) Split test suites — unit tests fast, integration tests separate. 5) Use Docker layer caching (cache-from in build). 6) Run security scans async/post-merge rather than blocking. 7) Use faster runners (more CPU, SSD). 8) Fail fast — run quickest checks first.</div>
+  </div>
+
+  <div class="scenario">
+    <div class="scenario-tag">Scenario — Intermediate</div>
+    <h4>A deployment pipeline is failing intermittently (flaky tests). What do you do?</h4>
+    <p>1) Identify which test fails and how often — track failure rate over 10+ runs.</p>
+    <p>2) Check for: race conditions, test order dependencies, external service dependencies (mock them).</p>
+    <p>3) Check for: timing issues — add explicit waits, not sleep().</p>
+    <p>4) Quarantine the flaky test: move to a separate job, fix it without blocking CI.</p>
+    <p>5) Add retry logic as temporary mitigation: <code>retry: 2</code> in GitLab CI or retry step in GitHub Actions.</p>
+    <p>6) Fix root cause — make tests deterministic.</p>
+  </div>
+</div>
+
+<!-- ======================== DOCKER ======================== -->
+<div class="section" id="docker">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(14,165,233,0.15);">🐳</div>
+    <h2>E. Docker — Containers Deep Dive</h2>
+    <span class="level-tag badge-blue badge">Intermediate → Advanced</span>
+  </div>
+
+  <div class="tip-box">Real-world analogy: Docker containers are like standardized shipping containers. The same container runs identically on a developer laptop, CI server, or cloud server — regardless of what's underneath.</div>
+
+  <h3>How Containers Work Internally</h3>
+  <div class="diagram">Container vs VM:
+
+VM:                           Container:
+┌──────────────────────┐     ┌──────────────────────┐
+│   App A   │   App B  │     │   App A   │   App B  │
+│ Libraries │ Libraries│     │ Libraries │ Libraries│
+│   Guest   │   Guest  │     ├───────────┴──────────┤
+│    OS     │    OS    │     │    Docker Engine      │
+├───────────┴──────────┤     ├──────────────────────┤
+│      Hypervisor      │     │    Host OS Kernel     │
+├──────────────────────┤     ├──────────────────────┤
+│      Hardware        │     │      Hardware        │
+└──────────────────────┘     └──────────────────────┘
+
+Linux Kernel features that enable containers:
+  - Namespaces: PID, Network, Mount, UTS, IPC, User isolation
+  - cgroups: CPU, Memory, I/O resource limits
+  - Union FS: layered filesystem (overlay2)</div>
+
+  <h3>Dockerfile — Deep Explanation</h3>
+  <pre><code># Multi-stage production Dockerfile
+# Stage 1: Build
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy package files first (layer caching)
+COPY package*.json ./
+RUN npm ci --only=production
+
+# Copy source code
+COPY . .
+
+# Build the app
+RUN npm run build
+
+# =============================================
+# Stage 2: Production image (minimal)
+FROM node:20-alpine AS production
+
+# Security: run as non-root user
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+WORKDIR /app
+
+# Copy only what we need from builder
+COPY --from=builder --chown=appuser:appgroup /app/dist ./dist
+COPY --from=builder --chown=appuser:appgroup /app/node_modules ./node_modules
+COPY --from=builder --chown=appuser:appgroup /app/package.json .
+
+# Switch to non-root
+USER appuser
+
+# Expose port (documentation only)
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD node healthcheck.js || exit 1
+
+# Use exec form (preferred — proper signal handling)
+CMD ["node", "dist/server.js"]</code></pre>
+
+  <h3>Image Optimization Techniques</h3>
+  <div class="table-wrapper">
+  <table>
+    <tr><th>Technique</th><th>Impact</th><th>How</th></tr>
+    <tr><td>Multi-stage builds</td><td>70-90% size reduction</td><td>Separate build and runtime stages</td></tr>
+    <tr><td>Alpine base images</td><td>node:alpine = 7MB vs node = 350MB</td><td>Use <code>FROM node:20-alpine</code></td></tr>
+    <tr><td>Layer caching</td><td>Faster builds</td><td>Copy package.json before source code</td></tr>
+    <tr><td>.dockerignore</td><td>Smaller context</td><td>Exclude node_modules, .git, tests</td></tr>
+    <tr><td>Minimize layers</td><td>Smaller image</td><td>Chain RUN commands with &&</td></tr>
+    <tr><td>No build tools in prod</td><td>Security + size</td><td>Don't install gcc, make in final stage</td></tr>
+  </table>
+  </div>
+
+  <pre><code># .dockerignore
+node_modules
+.git
+*.md
+tests/
+coverage/
+.env
+.env.*
+*.log
+Dockerfile*
+docker-compose*</code></pre>
+
+  <h3>Docker Networking</h3>
+  <pre><code># Network types
+docker network ls
+docker network create mynet --driver bridge
+
+# bridge (default): containers communicate via virtual switch
+# host: container uses host network directly (no isolation)
+# none: no networking
+# overlay: multi-host (used in Docker Swarm/K8s)
+
+# Connect containers
+docker run -d --name db --network mynet postgres:15
+docker run -d --name app --network mynet -p 3000:3000 myapp
+
+# Inside mynet, containers resolve each other by name:
+# app can reach db at "db:5432"
+
+# Inspect
+docker network inspect mynet</code></pre>
+
+  <h3>Docker Volumes</h3>
+  <pre><code># Types:
+# Volume (managed by Docker) — PREFERRED for prod
+docker volume create pgdata
+docker run -d -v pgdata:/var/lib/postgresql/data postgres:15
+
+# Bind mount (host path) — for dev
+docker run -d -v $(pwd)/app:/app node:20 npm run dev
+
+# tmpfs (in memory)
+docker run -d --tmpfs /tmp:rw,size=100m myapp
+
+# Volume operations
+docker volume ls
+docker volume inspect pgdata
+docker volume prune   # remove unused volumes</code></pre>
+
+  <h3>Docker Compose — Full Stack Example</h3>
+  <pre><code># docker-compose.yml
+version: '3.9'
+
+services:
+  app:
+    build:
+      context: .
+      target: production
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://user:pass@db:5432/mydb
+      - REDIS_URL=redis://cache:6379
+    depends_on:
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - backend
+
+  db:
+    image: postgres:15-alpine
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: mydb
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    secrets:
+      - db_password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d mydb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend
+
+  cache:
+    image: redis:7-alpine
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    networks:
+      - backend
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+    depends_on:
+      - app
+    networks:
+      - backend
+
+volumes:
+  pgdata:
+  redis_data:
+
+networks:
+  backend:
+    driver: bridge
+
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt</code></pre>
+
+  <h3>Useful Docker Commands</h3>
+  <pre><code># Container management
+docker ps -a
+docker logs -f --tail 100 container_id
+docker exec -it container_id /bin/sh
+docker inspect container_id
+docker stats              # live resource usage
+docker top container_id   # processes in container
+
+# Image management
+docker images
+docker pull nginx:alpine
+docker rmi image_id
+docker image prune -a     # remove all unused images
+docker history image_name # see layers
+
+# Cleanup
+docker system prune -af --volumes  # WARNING: removes everything
+
+# Debug a failed build
+docker build --no-cache --progress=plain .
+
+# Export/Import
+docker save myapp:latest | gzip > myapp.tar.gz
+docker load < myapp.tar.gz</code></pre>
+
+  <h3>Interview Questions — Docker</h3>
+  <div class="qa-block">
+    <div class="question">What is the difference between CMD and ENTRYPOINT in a Dockerfile?</div>
+    <div class="answer"><strong>CMD</strong> sets the default command and can be overridden: <code>docker run myimage /bin/bash</code> replaces CMD. <br><strong>ENTRYPOINT</strong> sets the fixed executable that always runs — additional docker run args are passed as arguments to it. <br>Best practice: Use ENTRYPOINT for the main executable, CMD for default arguments. Example: <code>ENTRYPOINT ["nginx"] CMD ["-g", "daemon off;"]</code>. Use exec form (JSON array) to ensure proper signal handling — shell form wraps in /bin/sh -c which doesn't forward SIGTERM.</div>
+  </div>
+  <div class="qa-block">
+    <div class="question">A Docker container uses too much memory and gets OOM-killed. How do you fix it?</div>
+    <div class="answer">1) Add memory limits: <code>docker run -m 512m --memory-swap 512m myapp</code> (--memory-swap = memory: swap disabled). 2) In compose: <code>mem_limit: 512m</code>. 3) Profile the app with <code>docker stats</code> to see actual usage. 4) Find memory leaks: exec into container, use <code>top</code> or heapdump tools. 5) In K8s: set resources.limits.memory. OOM kill appears in <code>dmesg</code>: "Killed process".</div>
+  </div>
+  <div class="qa-block">
+    <div class="question">How do you reduce Docker image size in practice?</div>
+    <div class="answer">1) Multi-stage builds — build in node:20, copy output to node:20-alpine. 2) Use specific Alpine tags, not latest. 3) Combine RUN commands: <code>RUN apt-get update && apt-get install -y pkg && rm -rf /var/lib/apt/lists/*</code>. 4) .dockerignore to exclude unnecessary files. 5) Don't install dev tools in production stage. 6) Use distroless base images for maximum security.</div>
+  </div>
+
+  <div class="tip-box">Mini Task: Build a 3-container Docker Compose setup: nginx (proxy) → Node.js app → Redis (session store). Use networks to isolate Redis from nginx direct access.</div>
+</div>
+
+<!-- ======================== KUBERNETES ======================== -->
+<div class="section" id="kubernetes">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(124,58,237,0.15);">☸️</div>
+    <h2>F. Kubernetes — Container Orchestration</h2>
+    <span class="level-tag badge-purple badge">Advanced</span>
+  </div>
+
+  <div class="tip-box">Real-world analogy: If Docker is a shipping container, Kubernetes is the entire port management system — it decides which ship (node) carries which containers, restarts broken ones, and scales up when demand increases.</div>
+
+  <h3>Architecture — Control Plane & Worker Nodes</h3>
+  <div class="diagram">KUBERNETES CLUSTER
+┌─────────────────────────────────────────────────────────┐
+│  CONTROL PLANE (Master)                                 │
+│  ┌────────────┐  ┌────────────┐  ┌───────────────────┐ │
+│  │ API Server │  │ Scheduler  │  │Controller Manager  │ │
+│  │(kube-      │  │(kube-      │  │(ReplicaSet,        │ │
+│  │ apiserver) │  │ scheduler) │  │ Deployment ctrl)   │ │
+│  └────────────┘  └────────────┘  └───────────────────┘ │
+│  ┌────────────┐  ┌────────────┐                        │
+│  │    etcd    │  │cloud-ctrl  │  ← distributed KV store│
+│  │ (cluster   │  │ manager    │                        │
+│  │  state)    │  │            │                        │
+│  └────────────┘  └────────────┘                        │
+└─────────────────────────────────────────────────────────┘
+        │                │                │
+┌───────┴──────┐  ┌──────┴──────┐  ┌─────┴───────┐
+│ WORKER NODE 1│  │WORKER NODE 2│  │WORKER NODE 3│
+│ ┌──────────┐ │  │ ┌─────────┐ │  │ ┌─────────┐ │
+│ │  kubelet │ │  │ │ kubelet │ │  │ │ kubelet │ │
+│ │kube-proxy│ │  │ │kube-prox│ │  │ │kube-prox│ │
+│ │container │ │  │ │container│ │  │ │container│ │
+│ │ runtime  │ │  │ │ runtime │ │  │ │ runtime │ │
+│ └──────────┘ │  │ └─────────┘ │  │ └─────────┘ │
+│  Pod Pod Pod │  │  Pod Pod    │  │  Pod Pod    │
+└──────────────┘  └─────────────┘  └─────────────┘</div>
+
+  <h3>Core Objects</h3>
+
+  <h4>Pod — Smallest Deployable Unit</h4>
+  <pre><code># pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: myapp
+  labels:
+    app: myapp
+    version: "1.0"
+spec:
+  containers:
+  - name: myapp
+    image: myorg/myapp:1.0
+    ports:
+    - containerPort: 3000
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"        # 0.1 CPU core
+      limits:
+        memory: "256Mi"
+        cpu: "500m"        # 0.5 CPU core
+    readinessProbe:
+      httpGet:
+        path: /health
+        port: 3000
+      initialDelaySeconds: 10
+      periodSeconds: 5
+    livenessProbe:
+      httpGet:
+        path: /health
+        port: 3000
+      initialDelaySeconds: 30
+      periodSeconds: 10
+    env:
+    - name: NODE_ENV
+      value: production
+    - name: DB_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: db-secret
+          key: password</code></pre>
+
+  <h4>Deployment — Manage Replicas & Updates</h4>
+  <pre><code>apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp
+  namespace: production
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: myapp
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1         # can have 1 extra pod during update
+      maxUnavailable: 0   # always keep all replicas running
+  template:
+    metadata:
+      labels:
+        app: myapp
+    spec:
+      containers:
+      - name: myapp
+        image: myorg/myapp:1.2
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+      affinity:
+        podAntiAffinity:           # spread across nodes
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app: myapp
+              topologyKey: kubernetes.io/hostname</code></pre>
+
+  <h4>Services — Network Access</h4>
+  <div class="table-wrapper">
+  <table>
+    <tr><th>Service Type</th><th>Access</th><th>Use Case</th></tr>
+    <tr><td>ClusterIP</td><td>Internal only (default)</td><td>Internal microservice communication</td></tr>
+    <tr><td>NodePort</td><td>NodeIP:Port externally</td><td>Dev/testing, simple exposure</td></tr>
+    <tr><td>LoadBalancer</td><td>Cloud load balancer IP</td><td>Production external traffic</td></tr>
+    <tr><td>ExternalName</td><td>DNS alias to external service</td><td>Migrate external services</td></tr>
+  </table>
+  </div>
+
+  <pre><code># Service YAML
+apiVersion: v1
+kind: Service
+metadata:
+  name: myapp-svc
+spec:
+  selector:
+    app: myapp          # routes to pods with this label
+  ports:
+  - port: 80            # service port
+    targetPort: 3000    # container port
+  type: LoadBalancer    # or ClusterIP, NodePort
+
+---
+# Ingress (HTTP routing at L7)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: myapp-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  tls:
+  - hosts: [myapp.com]
+    secretName: myapp-tls
+  rules:
+  - host: myapp.com
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: api-svc
+            port:
+              number: 80
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend-svc
+            port:
+              number: 80</code></pre>
+
+  <h4>ConfigMaps & Secrets</h4>
+  <pre><code># ConfigMap — non-sensitive config
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  DATABASE_HOST: postgres-svc
+  LOG_LEVEL: info
+  app.properties: |
+    server.port=3000
+    cache.ttl=300
+
+---
+# Secret — sensitive data (base64 encoded)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: db-secret
+type: Opaque
+data:
+  password: cGFzc3dvcmQxMjM=  # echo -n 'password123' | base64
+
+# Better: use External Secrets Operator + Vault or AWS Secrets Manager</code></pre>
+
+  <h3>Essential kubectl Commands</h3>
+  <pre><code># Context & cluster
+kubectl config get-contexts
+kubectl config use-context production
+kubectl cluster-info
+
+# Resources
+kubectl get pods -n production -o wide
+kubectl get pods --all-namespaces
+kubectl describe pod myapp-abc123 -n production
+kubectl logs myapp-abc123 -f --tail=100 -n production
+kubectl logs myapp-abc123 -c init-container -n production  # specific container
+
+# Debugging
+kubectl exec -it myapp-abc123 -- /bin/sh
+kubectl port-forward pod/myapp-abc123 8080:3000
+kubectl port-forward svc/myapp-svc 8080:80
+
+# Deployments
+kubectl apply -f deployment.yaml
+kubectl set image deployment/myapp myapp=myorg/myapp:1.3
+kubectl rollout status deployment/myapp
+kubectl rollout history deployment/myapp
+kubectl rollout undo deployment/myapp                  # rollback
+kubectl rollout undo deployment/myapp --to-revision=3 # rollback to specific
+
+# Scale
+kubectl scale deployment myapp --replicas=5
+kubectl autoscale deployment myapp --min=3 --max=10 --cpu-percent=70
+
+# Resource usage
+kubectl top pods -n production
+kubectl top nodes
+
+# Apply all manifests
+kubectl apply -f k8s/ -n production --dry-run=client  # preview changes</code></pre>
+
+  <h3>HPA — Horizontal Pod Autoscaler</h3>
+  <pre><code>apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: myapp-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: myapp
+  minReplicas: 3
+  maxReplicas: 20
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300  # wait 5min before scaling down</code></pre>
+
+  <h3>Helm — Kubernetes Package Manager</h3>
+  <pre><code># Install Helm
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+# Common operations
+helm repo add stable https://charts.helm.sh/stable
+helm repo update
+helm search repo nginx
+helm install my-nginx ingress-nginx/ingress-nginx \
+  --namespace ingress-nginx --create-namespace \
+  --set controller.replicaCount=2
+
+helm list -A
+helm upgrade my-nginx ingress-nginx/ingress-nginx --version 4.9.0
+helm rollback my-nginx 1
+helm uninstall my-nginx -n ingress-nginx
+
+# Custom chart
+helm create myapp
+# Edit templates/, values.yaml
+helm template myapp ./myapp-chart       # preview rendered manifests
+helm install myapp ./myapp-chart -f prod-values.yaml
+helm package ./myapp-chart              # create .tgz</code></pre>
+
+  <h3>Kubernetes Troubleshooting — Real Cases</h3>
+
+  <div class="scenario">
+    <div class="scenario-tag">Scenario — CrashLoopBackOff</div>
+    <h4>Pod is in CrashLoopBackOff. How do you debug?</h4>
+    <pre><code>kubectl get pods                           # see status
+kubectl describe pod myapp-abc123          # check Events section
+kubectl logs myapp-abc123                  # current logs
+kubectl logs myapp-abc123 --previous       # PREVIOUS container logs (key!)
+
+# Common causes:
+# 1. Application error on startup — check logs
+# 2. Missing env var / secret — check describe Events
+# 3. Liveness probe failing too quickly — check probe config
+# 4. OOMKilled — check "Last State" in describe
+# 5. Image pull failure — check imagePullPolicy, image name</code></pre>
+  </div>
+
+  <div class="scenario">
+    <div class="scenario-tag">Scenario — Pending Pod</div>
+    <h4>Pod stuck in Pending state. How do you debug?</h4>
+    <pre><code>kubectl describe pod myapp-abc123
+# Look at Events:
+# "0/3 nodes are available: insufficient memory" → nodes don't have enough
+# "did not match pod's node affinity/selector" → nodeSelector mismatch
+# "persistentvolumeclaim not found" → PVC issue
+
+# Check node resources
+kubectl top nodes
+kubectl describe nodes | grep -A5 "Allocated resources"</code></pre>
+  </div>
+
+  <div class="scenario">
+    <div class="scenario-tag">Scenario — Service Not Reachable</div>
+    <h4>Service exists but pods can't reach it. Debug steps:</h4>
+    <pre><code># 1. Check service selector matches pod labels
+kubectl get svc myapp-svc -o yaml
+kubectl get pods --show-labels | grep myapp
+
+# 2. Check endpoints (should have IPs)
+kubectl get endpoints myapp-svc
+# If empty: selector doesn't match any running pods
+
+# 3. Test from inside cluster
+kubectl run tmp --image=busybox -it --rm \
+  --restart=Never -- wget -O- http://myapp-svc:80
+
+# 4. Check kube-proxy logs on nodes
+kubectl logs -n kube-system -l k8s-app=kube-proxy</code></pre>
+  </div>
+
+  <h3>Interview Questions — Kubernetes</h3>
+  <div class="qa-block">
+    <div class="question">What is the difference between a Deployment and a StatefulSet?</div>
+    <div class="answer"><strong>Deployment:</strong> For stateless apps. Pods are interchangeable — any pod can be replaced. Storage is ephemeral. No stable network identity. Scale up/down freely. <br><strong>StatefulSet:</strong> For stateful apps (databases, Kafka). Each pod has stable hostname (pod-0, pod-1), stable storage (PVC per pod), ordered startup/shutdown. Used for: PostgreSQL, MongoDB, Kafka, ZooKeeper. Scale-up creates pod-N+1, scale-down removes pod-N first.</div>
+  </div>
+  <div class="qa-block">
+    <div class="question">What are liveness vs readiness probes and why do both matter?</div>
+    <div class="answer"><strong>Liveness:</strong> "Is this container alive?" — If it fails, K8s kills and restarts the container. Use for: detecting deadlocks, hung processes. <br><strong>Readiness:</strong> "Is this container ready to receive traffic?" — If it fails, K8s removes the pod from Service endpoints (stops sending traffic) but doesn't restart. Use for: startup time, temporary overload, dependency not ready. <br>Both matter: without readiness, traffic hits pods not yet ready; without liveness, hung pods stay running receiving requests they can't handle.</div>
+  </div>
+  <div class="qa-block">
+    <div class="question">Explain Kubernetes resource requests vs limits.</div>
+    <div class="answer"><strong>Requests:</strong> Minimum guaranteed resources. Used by scheduler to decide which node can fit the pod. If you request 256Mi, the node must have 256Mi available. <br><strong>Limits:</strong> Maximum allowed. CPU limit = throttling (slowed, not killed). Memory limit = OOMKill (process killed). <br>Best practice: Set both. Requests should be your normal usage, limits at 2-3x requests. If requests > limits, pod won't schedule. If no limits set, pod can consume all node resources.</div>
+  </div>
+
+  <div class="tip-box">Mini Task: Deploy a Node.js app on Kubernetes with: 3 replicas, HPA (scale 3-10 at 70% CPU), a LoadBalancer service, ConfigMap for config, and Secret for DB password. Write all YAML files.</div>
+</div>
+
+<!-- PART 3: Cloud, Terraform, Ansible, Monitoring, DevSecOps, System Design -->
+
+<!-- ======================== CLOUD ======================== -->
+<div class="section" id="cloud">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(245,158,11,0.15);">☁️</div>
+    <h2>G. Cloud — AWS Focus</h2>
+    <span class="level-tag badge-blue badge">Intermediate → Advanced</span>
+  </div>
+
+  <div class="tip-box">Real-world analogy: AWS is like renting a city's infrastructure — instead of building your own power plant, roads, and buildings, you rent exactly what you need and pay per use.</div>
+
+  <h3>AWS Core Services Architecture</h3>
+  <div class="diagram">PRODUCTION AWS ARCHITECTURE
+                            ┌─────────────────────────────┐
+                            │         Route 53            │  ← DNS
+                            └──────────────┬──────────────┘
+                                           │
+                            ┌──────────────┴──────────────┐
+                            │      CloudFront CDN          │  ← Edge cache
+                            └──────────────┬──────────────┘
+                                           │
+                ┌──────────────────────────┴──────────────────────────┐
+                │                    VPC                               │
+                │  ┌─────────────────────────────────────────────┐    │
+                │  │          Public Subnets (2 AZs)              │    │
+                │  │  ┌──────────────┐  ┌──────────────────────┐ │    │
+                │  │  │ NAT Gateway  │  │ Application LB (ELB)  │ │    │
+                │  │  └──────────────┘  └──────────┬───────────┘ │    │
+                │  └─────────────────────────────────│───────────┘    │
+                │  ┌──────────────────────────────────│──────────────┐ │
+                │  │          Private Subnets (2 AZs)  │             │ │
+                │  │  ┌────────────────────────────────┘            │ │
+                │  │  │  Auto Scaling Group                         │ │
+                │  │  │  ┌──────────┐  ┌──────────┐                │ │
+                │  │  │  │  EC2 #1  │  │  EC2 #2  │                │ │
+                │  │  │  │ (t3.med) │  │ (t3.med) │                │ │
+                │  │  │  └──────────┘  └──────────┘                │ │
+                │  │  └─────────────────────────────────────────── │ │
+                │  │  ┌─────────────────┐  ┌─────────────────────┐ │ │
+                │  │  │  RDS Aurora     │  │  ElastiCache Redis  │ │ │
+                │  │  │  (Multi-AZ)     │  │  (cluster mode)     │ │ │
+                │  │  └─────────────────┘  └─────────────────────┘ │ │
+                │  └─────────────────────────────────────────────── ┘ │
+                └──────────────────────────────────────────────────────┘
+                            │
+                ┌───────────┴────────────┐
+                │    S3 (static assets,  │
+                │    backups, logs)      │
+                └────────────────────────┘</div>
+
+  <h3>EC2 — Elastic Compute Cloud</h3>
+  <pre><code># Launch EC2 via AWS CLI
+aws ec2 run-instances \
+  --image-id ami-0c55b159cbfafe1f0 \
+  --instance-type t3.medium \
+  --key-name my-keypair \
+  --security-group-ids sg-12345678 \
+  --subnet-id subnet-12345678 \
+  --iam-instance-profile Name=EC2-SSM-Role \
+  --user-data file://userdata.sh \
+  --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=myapp},{Key=Env,Value=prod}]' \
+  --count 1
+
+# User data script (runs on first boot)
+cat userdata.sh
+#!/bin/bash
+yum update -y
+yum install -y docker amazon-cloudwatch-agent
+systemctl start docker
+systemctl enable docker
+usermod -a -G docker ec2-user
+
+# Instance types cheat sheet
+# t3/t4g: Burstable (dev, small workloads)
+# m6i/m7g: General purpose (apps, medium DBs)
+# c6i/c7g: Compute optimized (CPU-intensive)
+# r6i/r7g: Memory optimized (large DBs, analytics)
+# i3/i4i: Storage optimized (NoSQL, data warehousing)</code></pre>
+
+  <h3>S3 — Simple Storage Service</h3>
+  <pre><code># S3 commands
+aws s3 mb s3://my-unique-bucket --region us-east-1
+aws s3 cp file.txt s3://my-bucket/folder/
+aws s3 sync ./dist/ s3://my-bucket/static/ --delete
+aws s3 ls s3://my-bucket/ --recursive --human-readable
+
+# Bucket policy (public read for static website)
+aws s3api put-bucket-policy --bucket my-bucket --policy '{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": "*",
+    "Action": "s3:GetObject",
+    "Resource": "arn:aws:s3:::my-bucket/*"
+  }]
+}'
+
+# Versioning
+aws s3api put-bucket-versioning --bucket my-bucket \
+  --versioning-configuration Status=Enabled
+
+# Lifecycle rule (archive after 30d, delete after 365d)
+aws s3api put-bucket-lifecycle-configuration --bucket my-bucket \
+  --lifecycle-configuration file://lifecycle.json
+
+# Pre-signed URL (temporary access)
+aws s3 presign s3://my-bucket/file.txt --expires-in 3600</code></pre>
+
+  <h3>IAM — Identity and Access Management</h3>
+  <pre><code># Principle of least privilege
+# BAD: attaching AdministratorAccess to an EC2 role
+# GOOD: only the permissions the service actually needs
+
+# Example: EC2 instance that only reads from specific S3 bucket
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "arn:aws:s3:::my-app-bucket",
+        "arn:aws:s3:::my-app-bucket/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ssm:GetParameter",
+        "ssm:GetParameters"
+      ],
+      "Resource": "arn:aws:ssm:us-east-1:123456789:parameter/myapp/*"
+    }
+  ]
+}
+
+# Create role, attach policy, assign to EC2
+aws iam create-role --role-name MyAppRole \
+  --assume-role-policy-document file://trust-policy.json
+aws iam put-role-policy --role-name MyAppRole \
+  --policy-name MyAppPolicy --policy-document file://policy.json
+aws iam create-instance-profile --instance-profile-name MyAppProfile
+aws iam add-role-to-instance-profile \
+  --instance-profile-name MyAppProfile --role-name MyAppRole</code></pre>
+
+  <h3>VPC — Virtual Private Cloud</h3>
+  <div class="table-wrapper">
+  <table>
+    <tr><th>Component</th><th>Purpose</th><th>Key Points</th></tr>
+    <tr><td>VPC</td><td>Isolated network</td><td>CIDR block, e.g. 10.0.0.0/16</td></tr>
+    <tr><td>Subnet</td><td>Sub-network within VPC</td><td>Public or private, tied to AZ</td></tr>
+    <tr><td>Internet Gateway</td><td>VPC → Internet</td><td>For public subnets</td></tr>
+    <tr><td>NAT Gateway</td><td>Private → Internet (outbound only)</td><td>Expensive, per-AZ, no inbound</td></tr>
+    <tr><td>Route Table</td><td>Routing rules</td><td>0.0.0.0/0 → IGW (public), → NAT (private)</td></tr>
+    <tr><td>Security Group</td><td>Instance-level firewall (stateful)</td><td>Inbound + outbound rules</td></tr>
+    <tr><td>NACL</td><td>Subnet-level firewall (stateless)</td><td>Rules must be set for in AND out</td></tr>
+  </table>
+  </div>
+
+  <h3>Auto Scaling & Load Balancing</h3>
+  <pre><code># Auto Scaling Group configuration
+aws autoscaling create-auto-scaling-group \
+  --auto-scaling-group-name myapp-asg \
+  --launch-template LaunchTemplateName=myapp-lt,Version='$Latest' \
+  --min-size 2 \
+  --max-size 10 \
+  --desired-capacity 3 \
+  --target-group-arns arn:aws:elasticloadbalancing:... \
+  --vpc-zone-identifier "subnet-aaa,subnet-bbb"  # multiple AZs
+
+# Scaling policy (target tracking)
+aws autoscaling put-scaling-policy \
+  --policy-name cpu-target-policy \
+  --auto-scaling-group-name myapp-asg \
+  --policy-type TargetTrackingScaling \
+  --target-tracking-configuration '{
+    "PredefinedMetricSpecification": {
+      "PredefinedMetricType": "ASGAverageCPUUtilization"
+    },
+    "TargetValue": 60.0
+  }'</code></pre>
+
+  <h3>Cost Optimization Tips</h3>
+  <div class="tip-box">AWS costs can spiral if unmanaged. These practices can reduce bills by 40-70%.</div>
+  <ul>
+    <li><strong>Right-sizing:</strong> Use AWS Compute Optimizer — most instances are over-provisioned by 50%+</li>
+    <li><strong>Reserved Instances / Savings Plans:</strong> 1-3 year commitment = 30-70% discount vs On-Demand</li>
+    <li><strong>Spot Instances:</strong> 70-90% cheaper for fault-tolerant workloads (batch, dev, CI/CD workers)</li>
+    <li><strong>S3 storage classes:</strong> Move to Infrequent Access after 30 days, Glacier after 90 days</li>
+    <li><strong>Delete unused resources:</strong> Unattached EBS volumes, idle Elastic IPs, old snapshots</li>
+    <li><strong>CloudWatch billing alerts:</strong> Set alarms at $50, $100, $500 thresholds</li>
+    <li><strong>Use AWS Cost Explorer:</strong> Monthly review — identify top cost drivers</li>
+  </ul>
+
+  <h3>AWS vs Azure vs GCP Quick Comparison</h3>
+  <div class="table-wrapper">
+  <table>
+    <tr><th>Service</th><th>AWS</th><th>Azure</th><th>GCP</th></tr>
+    <tr><td>Compute</td><td>EC2</td><td>Virtual Machines</td><td>Compute Engine</td></tr>
+    <tr><td>Serverless</td><td>Lambda</td><td>Azure Functions</td><td>Cloud Functions</td></tr>
+    <tr><td>Container Orchestration</td><td>EKS</td><td>AKS</td><td>GKE (most mature)</td></tr>
+    <tr><td>Object Storage</td><td>S3</td><td>Blob Storage</td><td>Cloud Storage</td></tr>
+    <tr><td>Managed Database</td><td>RDS</td><td>Azure SQL</td><td>Cloud SQL</td></tr>
+    <tr><td>IAM</td><td>IAM</td><td>Azure AD / RBAC</td><td>Cloud IAM</td></tr>
+    <tr><td>DNS</td><td>Route 53</td><td>Azure DNS</td><td>Cloud DNS</td></tr>
+    <tr><td>CDN</td><td>CloudFront</td><td>Azure CDN</td><td>Cloud CDN</td></tr>
+    <tr><td>Market share (2024)</td><td>~31%</td><td>~25%</td><td>~11%</td></tr>
+  </table>
+  </div>
+
+  <h3>Interview Questions — Cloud</h3>
+  <div class="qa-block">
+    <div class="question">What is the difference between Security Groups and NACLs in AWS?</div>
+    <div class="answer"><strong>Security Groups:</strong> Instance-level, stateful (if you allow inbound on 80, return traffic is automatic), only allow rules, no deny rules. Changes take effect immediately. <br><strong>NACLs:</strong> Subnet-level, stateless (must explicitly allow return traffic), support both allow and deny rules, rules evaluated in number order. Good for blocking specific IPs subnet-wide. <br>Use both: NACLs for coarse-grained subnet protection, Security Groups for fine-grained instance control.</div>
+  </div>
+  <div class="qa-block">
+    <div class="question">How does AWS Auto Scaling decide when to scale in/out?</div>
+    <div class="answer">Based on CloudWatch alarms tied to metrics (CPU, memory, custom metrics, SQS queue depth, etc.). Target tracking is simplest — set CPU target at 60%, ASG maintains it by adding/removing instances. Scale-out is aggressive (fast); scale-in has a cooldown period (default 300s) to prevent thrashing. Warm-up period ensures new instances aren't counted in metrics until they're ready. Always use multiple AZs for high availability.</div>
+  </div>
+</div>
+
+<!-- ======================== TERRAFORM ======================== -->
+<div class="section" id="terraform">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(124,58,237,0.15);">🏗️</div>
+    <h2>H. Terraform — Infrastructure as Code</h2>
+    <span class="level-tag badge-purple badge">Intermediate → Advanced</span>
+  </div>
+
+  <div class="tip-box">Real-world analogy: Terraform is like an architect's blueprint — you describe the desired state of your infrastructure, and Terraform figures out how to build/change it to match.</div>
+
+  <h3>Terraform Workflow</h3>
+  <div class="diagram">Write HCL Code → terraform init → terraform plan → terraform apply → terraform destroy
+       (main.tf)      (download        (show what       (make it       (tear it
+                       providers)       will change)     happen)        down)</div>
+
+  <h3>Complete AWS Project Example</h3>
+  <pre><code># main.tf
+terraform {
+  required_version = ">= 1.6.0"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+  backend "s3" {
+    bucket         = "my-terraform-state"
+    key            = "prod/terraform.tfstate"
+    region         = "us-east-1"
+    encrypt        = true
+    dynamodb_table = "terraform-locks"  # state locking
+  }
+}
+
+provider "aws" {
+  region = var.aws_region
+  default_tags {
+    tags = {
+      Environment = var.environment
+      ManagedBy   = "Terraform"
+      Project     = var.project
+    }
+  }
+}
+
+# VPC
+module "vpc" {
+  source  = "terraform-aws-modules/vpc/aws"
+  version = "5.0.0"
+
+  name = "${var.project}-${var.environment}-vpc"
+  cidr = "10.0.0.0/16"
+
+  azs             = ["us-east-1a", "us-east-1b", "us-east-1c"]
+  private_subnets = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+  public_subnets  = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
+
+  enable_nat_gateway = true
+  single_nat_gateway = false  # one per AZ for HA
+  enable_dns_hostnames = true
+}
+
+# EC2 Instance
+resource "aws_instance" "app" {
+  count         = var.app_instance_count
+  ami           = data.aws_ami.amazon_linux.id
+  instance_type = var.instance_type
+  subnet_id     = module.vpc.private_subnets[count.index % length(module.vpc.private_subnets)]
+
+  vpc_security_group_ids = [aws_security_group.app.id]
+  iam_instance_profile   = aws_iam_instance_profile.app.name
+  key_name               = var.key_pair_name
+
+  root_block_device {
+    volume_size = 30
+    encrypted   = true
+  }
+
+  user_data = base64encode(templatefile("${path.module}/userdata.sh.tpl", {
+    environment = var.environment
+    app_version = var.app_version
+  }))
+
+  tags = {
+    Name = "${var.project}-app-${count.index + 1}"
+  }
+}
+
+# RDS
+resource "aws_db_instance" "main" {
+  identifier        = "${var.project}-${var.environment}-db"
+  engine            = "postgres"
+  engine_version    = "15.4"
+  instance_class    = "db.t3.medium"
+  allocated_storage = 100
+  storage_encrypted = true
+
+  db_name  = var.db_name
+  username = var.db_username
+  password = random_password.db.result
+
+  multi_az               = true
+  db_subnet_group_name   = aws_db_subnet_group.main.name
+  vpc_security_group_ids = [aws_security_group.rds.id]
+
+  backup_retention_period = 7
+  deletion_protection     = true
+  skip_final_snapshot     = false
+  final_snapshot_identifier = "${var.project}-final-snapshot"
+}
+
+resource "random_password" "db" {
+  length  = 32
+  special = true
+}
+
+# Store DB password in Secrets Manager
+resource "aws_secretsmanager_secret" "db_password" {
+  name = "${var.project}/${var.environment}/db-password"
+}
+resource "aws_secretsmanager_secret_version" "db_password" {
+  secret_id     = aws_secretsmanager_secret.db_password.id
+  secret_string = random_password.db.result
+}
+
+# Data source
+data "aws_ami" "amazon_linux" {
+  most_recent = true
+  owners      = ["amazon"]
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
+  }
+}</code></pre>
+
+  <h4>Variables and Outputs</h4>
+  <pre><code># variables.tf
+variable "aws_region" {
+  type        = string
+  default     = "us-east-1"
+  description = "AWS region to deploy to"
+}
+
+variable "environment" {
+  type        = string
+  description = "Environment: dev/staging/prod"
+  validation {
+    condition     = contains(["dev", "staging", "prod"], var.environment)
+    error_message = "Must be dev, staging, or prod."
+  }
+}
+
+variable "app_instance_count" {
+  type    = number
+  default = 2
+}
+
+variable "instance_type" {
+  type    = string
+  default = "t3.medium"
+}
+
+# outputs.tf
+output "vpc_id" {
+  value = module.vpc.vpc_id
+}
+
+output "app_load_balancer_dns" {
+  value = aws_lb.main.dns_name
+}
+
+output "db_endpoint" {
+  value     = aws_db_instance.main.endpoint
+  sensitive = true
+}
+
+# terraform.tfvars (per environment)
+aws_region         = "us-east-1"
+environment        = "prod"
+app_instance_count = 4
+instance_type      = "t3.large"</code></pre>
+
+  <h3>Terraform State Management</h3>
+  <pre><code># Remote backend setup (do this FIRST in new project)
+# Create S3 + DynamoDB manually, then configure backend
+
+aws s3api create-bucket --bucket my-terraform-state --region us-east-1
+aws s3api put-bucket-versioning --bucket my-terraform-state \
+  --versioning-configuration Status=Enabled
+aws s3api put-bucket-encryption --bucket my-terraform-state \
+  --server-side-encryption-configuration '...'
+aws dynamodb create-table --table-name terraform-locks \
+  --attribute-definitions AttributeName=LockID,AttributeType=S \
+  --key-schema AttributeName=LockID,KeyType=HASH \
+  --billing-mode PAY_PER_REQUEST
+
+# State commands
+terraform state list                    # list all resources
+terraform state show aws_instance.app   # show resource details
+terraform state mv aws_instance.app aws_instance.web  # rename
+terraform state rm aws_instance.old     # remove from state (don't destroy)
+terraform import aws_instance.app i-1234567890  # import existing resource
+
+# Workspaces (manage multiple environments)
+terraform workspace new staging
+terraform workspace select production
+terraform workspace list</code></pre>
+
+  <h3>Interview Questions — Terraform</h3>
+  <div class="qa-block">
+    <div class="question">What happens if two team members run terraform apply simultaneously?</div>
+    <div class="answer">State corruption can occur — both may read the same state and apply conflicting changes. Solution: use DynamoDB state locking with S3 backend. When one apply runs, it acquires a lock in DynamoDB. The second apply waits (or fails with lock error). If a lock gets stuck (apply crashed), manually remove it: <code>terraform force-unlock LOCK_ID</code>. Always use remote backend with locking in teams — never use local state files.</div>
+  </div>
+  <div class="qa-block">
+    <div class="question">What is terraform taint and when do you use it?</div>
+    <div class="answer"><code>terraform taint resource.name</code> marks a resource for destruction and recreation on the next apply — even if its configuration hasn't changed. Use when: a resource is in a bad state (misconfigured EC2, corrupted DB), a resource needs to be replaced without changing config, you want to force a new key pair or certificate. In Terraform 1.0+, preferred approach is <code>terraform apply -replace="resource.name"</code> which does the same in one step.</div>
+  </div>
+</div>
+
+<!-- ======================== ANSIBLE ======================== -->
+<div class="section" id="ansible">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(239,68,68,0.15);">🤖</div>
+    <h2>I. Ansible — Configuration Management</h2>
+    <span class="level-tag badge-blue badge">Intermediate</span>
+  </div>
+
+  <div class="tip-box">Real-world analogy: Ansible is like a head chef giving instructions to multiple cooks simultaneously — you write the recipe once (playbook), and Ansible ensures every kitchen (server) follows it exactly.</div>
+
+  <h3>Architecture</h3>
+  <div class="diagram">Control Node (your machine / CI server)
+         │
+         │  SSH (agentless — no software needed on target)
+         │
+    ┌────┴─────────────────────────────────────────┐
+    │  Inventory                                    │
+    │  [web]                [db]          [all]     │
+    │  web1.example.com     db1           ...       │
+    │  web2.example.com     db2                     │
+    └───────────────────────────────────────────────┘
+         │         │
+    web servers   db servers  (targeted separately)</div>
+
+  <h3>Inventory</h3>
+  <pre><code># inventory/hosts.ini
+[webservers]
+web1 ansible_host=10.0.1.10
+web2 ansible_host=10.0.1.11
+
+[dbservers]
+db1 ansible_host=10.0.2.10 ansible_user=postgres
+
+[production:children]
+webservers
+dbservers
+
+[all:vars]
+ansible_user=ubuntu
+ansible_ssh_private_key_file=~/.ssh/prod-key.pem
+ansible_python_interpreter=/usr/bin/python3
+
+# Dynamic inventory (AWS)
+# ansible-inventory -i aws_ec2.yaml --list</code></pre>
+
+  <h3>Playbook — Complete Deployment</h3>
+  <pre><code># deploy-app.yml
+---
+- name: Deploy Application
+  hosts: webservers
+  become: yes
+  vars:
+    app_user: appuser
+    app_dir: /opt/myapp
+    app_port: 3000
+    node_version: "20"
+
+  pre_tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+
+  tasks:
+    - name: Install required packages
+      package:
+        name:
+          - git
+          - nginx
+          - curl
+        state: present
+
+    - name: Install Node.js
+      block:
+        - name: Add NodeSource repo
+          shell: curl -fsSL https://deb.nodesource.com/setup_{{ node_version }}.x | bash -
+          args:
+            creates: /etc/apt/sources.list.d/nodesource.list
+
+        - name: Install Node.js
+          apt:
+            name: nodejs
+            state: present
+
+    - name: Create app user
+      user:
+        name: "{{ app_user }}"
+        system: yes
+        shell: /bin/false
+        home: "{{ app_dir }}"
+
+    - name: Create app directory
+      file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0755'
+
+    - name: Clone application
+      git:
+        repo: https://github.com/org/myapp.git
+        dest: "{{ app_dir }}"
+        version: "{{ app_version | default('main') }}"
+      become_user: "{{ app_user }}"
+      notify: restart myapp
+
+    - name: Install npm dependencies
+      npm:
+        path: "{{ app_dir }}"
+        production: yes
+      become_user: "{{ app_user }}"
+
+    - name: Deploy systemd service
+      template:
+        src: templates/myapp.service.j2
+        dest: /etc/systemd/system/myapp.service
+        mode: '0644'
+      notify:
+        - reload systemd
+        - restart myapp
+
+    - name: Deploy nginx config
+      template:
+        src: templates/nginx.conf.j2
+        dest: /etc/nginx/sites-available/myapp
+      notify: reload nginx
+
+    - name: Enable nginx site
+      file:
+        src: /etc/nginx/sites-available/myapp
+        dest: /etc/nginx/sites-enabled/myapp
+        state: link
+
+    - name: Start and enable services
+      service:
+        name: "{{ item }}"
+        state: started
+        enabled: yes
+      loop:
+        - nginx
+        - myapp
+
+  handlers:
+    - name: reload systemd
+      systemd:
+        daemon_reload: yes
+
+    - name: restart myapp
+      service:
+        name: myapp
+        state: restarted
+
+    - name: reload nginx
+      service:
+        name: nginx
+        state: reloaded
+
+  post_tasks:
+    - name: Wait for app to be healthy
+      uri:
+        url: "http://localhost:{{ app_port }}/health"
+        status_code: 200
+      retries: 10
+      delay: 5</code></pre>
+
+  <h3>Roles Structure</h3>
+  <pre><code>roles/
+  nginx/
+    tasks/
+      main.yml       # main task list
+    handlers/
+      main.yml       # handlers
+    templates/
+      nginx.conf.j2  # Jinja2 template
+    files/
+      ssl.crt        # static files
+    vars/
+      main.yml       # role variables (high priority)
+    defaults/
+      main.yml       # default variables (lowest priority)
+    meta/
+      main.yml       # role dependencies
+
+# Using roles in playbook
+- hosts: webservers
+  roles:
+    - role: nginx
+      vars:
+        nginx_port: 80
+    - role: nodejs
+    - role: myapp</code></pre>
+
+  <h3>Key Ansible Commands</h3>
+  <pre><code># Ad-hoc commands
+ansible webservers -i hosts.ini -m ping
+ansible all -m shell -a "df -h" -i hosts.ini
+ansible webservers -m service -a "name=nginx state=restarted" --become
+
+# Run playbook
+ansible-playbook deploy-app.yml -i inventory/hosts.ini
+ansible-playbook deploy-app.yml -i inventory/hosts.ini \
+  --limit web1                    # target specific host
+  --tags deploy                   # only run tagged tasks
+  --skip-tags security           # skip specific tags
+  --check                        # dry run
+  --diff                         # show file diffs
+  -e "app_version=1.2.3"        # extra vars
+  -e @vars/prod.yml              # vars from file
+
+# Vault for secrets
+ansible-vault encrypt secrets.yml
+ansible-vault decrypt secrets.yml
+ansible-vault view secrets.yml
+ansible-playbook site.yml --ask-vault-pass
+ansible-playbook site.yml --vault-password-file ~/.vault_pass</code></pre>
+</div>
+
+<!-- ======================== MONITORING ======================== -->
+<div class="section" id="monitoring">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(16,185,129,0.15);">📊</div>
+    <h2>J. Monitoring & Observability</h2>
+    <span class="level-tag badge-purple badge">Advanced</span>
+  </div>
+
+  <div class="tip-box">The three pillars of observability: Metrics (what), Logs (why), Traces (where). You need all three to fully understand production system health.</div>
+
+  <h3>Prometheus + Grafana Architecture</h3>
+  <div class="diagram">Your App          Prometheus         Grafana          AlertManager
+     │                   │                  │                  │
+     │ /metrics          │                  │                  │
+     │ (expose metrics)  │                  │                  │
+     │<─── scrape ───────│                  │                  │
+     │                   │── PromQL query ─>│                  │
+     │                   │<─ metrics ───────│                  │
+     │                   │                  │── dashboard ──>  │
+     │                   │── alert rule ───>│                  │
+     │                   │                  │── fire alert ───>│
+     │                   │                  │                  │── Slack/PagerDuty</div>
+
+  <h3>Prometheus Configuration</h3>
+  <pre><code># prometheus.yml
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
+rule_files:
+  - "alerts/*.yml"
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['server1:9100', 'server2:9100']
+
+  - job_name: 'myapp'
+    metrics_path: /metrics
+    scrape_interval: 10s
+    kubernetes_sd_configs:
+      - role: pod
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+        action: keep
+        regex: true</code></pre>
+
+  <h3>PromQL — Query Language</h3>
+  <pre><code># Instant queries
+up                                    # is target up (1/0)
+http_requests_total                   # counter
+
+# Rate (per-second rate over 5min window)
+rate(http_requests_total[5m])
+
+# Error rate
+rate(http_requests_total{status=~"5.."}[5m]) /
+rate(http_requests_total[5m])
+
+# CPU usage per pod
+100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
+
+# Memory usage
+(node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) /
+node_memory_MemTotal_bytes * 100
+
+# P99 latency
+histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m]))
+
+# Top 5 pods by CPU
+topk(5, rate(container_cpu_usage_seconds_total[5m]))</code></pre>
+
+  <h3>Alert Rules</h3>
+  <pre><code># alerts/app.yml
+groups:
+- name: app-alerts
+  rules:
+  - alert: HighErrorRate
+    expr: |
+      rate(http_requests_total{status=~"5.."}[5m]) /
+      rate(http_requests_total[5m]) > 0.05
+    for: 2m
+    labels:
+      severity: critical
+    annotations:
+      summary: "High error rate: {{ $labels.job }}"
+      description: "Error rate is {{ $value | humanizePercentage }}"
+      runbook_url: "https://wiki.company.com/runbooks/high-error-rate"
+
+  - alert: HighMemoryUsage
+    expr: |
+      (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) /
+      node_memory_MemTotal_bytes * 100 > 85
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Memory > 85% on {{ $labels.instance }}"
+
+  - alert: PodCrashLooping
+    expr: kube_pod_container_status_restarts_total > 5
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Pod {{ $labels.namespace }}/{{ $labels.pod }} is crash-looping"</code></pre>
+
+  <h3>ELK Stack</h3>
+  <pre><code"># docker-compose for ELK
+version: '3.9'
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.11.0
+    volumes:
+      - ./logstash/pipeline:/usr/share/logstash/pipeline
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.11.0
+    user: root
+    volumes:
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - ./filebeat.yml:/usr/share/filebeat/filebeat.yml:ro</code></pre>
+
+  <h3>Interview Questions — Monitoring</h3>
+  <div class="qa-block">
+    <div class="question">What is the difference between metrics, logs, and traces?</div>
+    <div class="answer"><strong>Metrics:</strong> Numerical time-series data — CPU%, request count, latency p99. Low storage cost. Good for alerting on known failure modes. <br><strong>Logs:</strong> Structured or unstructured text events — error messages, access logs. High storage cost. Good for debugging specific incidents. <br><strong>Traces:</strong> End-to-end journey of a request through distributed services — shows where time is spent across microservices. Tools: Jaeger, Zipkin, AWS X-Ray. Together they provide full observability.</div>
+  </div>
+  <div class="qa-block">
+    <div class="question">Production alert firing at 3AM: CPU at 95%. Walk me through your response.</div>
+    <div class="answer">1) Acknowledge alert (prevent escalation). 2) Open Grafana — check CPU trend (sudden spike or gradual?). 3) <code>top</code> / <code>kubectl top pods</code> — identify which process/pod is consuming CPU. 4) Check logs for errors or unusual patterns: <code>kubectl logs -f pod-name</code>. 5) Check if traffic increased: Grafana request rate dashboard. 6) If runaway process: restart pod/service (mitigate first, fix later). 7) If traffic spike: trigger manual scaling. 8) Post-incident: root cause analysis, adjust alert thresholds, add runbook.</div>
+  </div>
+</div>
+
+<!-- ======================== DEVSECOPS ======================== -->
+<div class="section" id="devsecops">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(239,68,68,0.15);">🔒</div>
+    <h2>K. DevSecOps — Security in DevOps</h2>
+    <span class="level-tag badge-purple badge">Advanced</span>
+  </div>
+
+  <h3>Secure CI/CD Pipeline</h3>
+  <pre><code># Security stages in pipeline
+stages:
+  - test
+  - sast          # Static Application Security Testing
+  - sca           # Software Composition Analysis (dependencies)
+  - build
+  - container-scan # Docker image vulnerability scan
+  - dast          # Dynamic Application Security Testing
+  - deploy
+
+sast:
+  image: semgrep/semgrep
+  script:
+    - semgrep --config=auto --json --output=semgrep.json .
+  artifacts:
+    reports:
+      sast: semgrep.json
+
+sca:
+  image: owasp/dependency-check
+  script:
+    - dependency-check.sh --project myapp --scan . --format JSON
+  allow_failure: false  # block on HIGH/CRITICAL CVEs
+
+container-scan:
+  image: aquasec/trivy
+  script:
+    - trivy image --exit-code 1 --severity HIGH,CRITICAL \
+        --ignore-unfixed $IMAGE_TAG</code></pre>
+
+  <h3>Secrets Management</h3>
+  <pre><code"># HashiCorp Vault — store and retrieve secrets
+
+# Authenticate from CI
+export VAULT_ADDR='https://vault.company.com'
+export VAULT_TOKEN=$(vault write -field=token auth/approle/login \
+  role_id=$VAULT_ROLE_ID secret_id=$VAULT_SECRET_ID)
+
+# Read secrets
+DB_PASSWORD=$(vault kv get -field=password secret/prod/database)
+API_KEY=$(vault kv get -field=key secret/prod/api)
+
+# Kubernetes: External Secrets Operator
+# ExternalSecret automatically syncs Vault → K8s Secret
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: db-secret
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: vault-backend
+    kind: ClusterSecretStore
+  target:
+    name: db-secret
+  data:
+  - secretKey: password
+    remoteRef:
+      key: secret/prod/database
+      property: password</code></pre>
+
+  <h3>IAM Best Practices</h3>
+  <ul>
+    <li><strong>Least privilege:</strong> Only grant permissions actually needed — review quarterly</li>
+    <li><strong>No root account usage:</strong> Create IAM users, enable MFA on root, then lock it away</li>
+    <li><strong>Service accounts:</strong> Use IAM roles for EC2/Lambda, not access keys</li>
+    <li><strong>Access key rotation:</strong> Rotate every 90 days, audit with IAM Access Analyzer</li>
+    <li><strong>SCP (Service Control Policies):</strong> Organization-level guardrails via AWS Organizations</li>
+    <li><strong>CloudTrail:</strong> Enable in all regions, immutable audit log of all API calls</li>
+  </ul>
+
+  <h3>Vulnerability Scanning</h3>
+  <pre><code># Trivy (container + filesystem scanning)
+trivy image nginx:latest
+trivy image --severity HIGH,CRITICAL myapp:1.0
+trivy fs .                       # scan filesystem
+trivy k8s --report summary cluster  # scan K8s cluster
+
+# Snyk
+snyk test                        # check dependencies
+snyk container test myapp:latest
+snyk iac test terraform/         # IaC misconfigs
+
+# OWASP ZAP (DAST)
+docker run -t owasp/zap2docker-stable zap-baseline.py \
+  -t https://staging.myapp.com -r report.html
+
+# Detect secrets in code
+gitleaks detect --source=. --verbose
+truffleHog git file://. --since-commit HEAD~5</code></pre>
+</div>
+
+<!-- ======================== SYSTEM DESIGN ======================== -->
+<div class="section" id="sysdesign">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(245,158,11,0.15);">🏛️</div>
+    <h2>L. System Design — DevOps Perspective</h2>
+    <span class="level-tag badge-purple badge">Senior Level</span>
+  </div>
+
+  <h3>High Availability Design Principles</h3>
+  <ul>
+    <li><strong>Eliminate single points of failure:</strong> Every component should have at least 2 instances</li>
+    <li><strong>Multi-AZ deployments:</strong> Distribute across Availability Zones within a region</li>
+    <li><strong>Health checks everywhere:</strong> LB, K8s probes, application-level</li>
+    <li><strong>Circuit breakers:</strong> Stop cascading failures (Hystrix, Resilience4j)</li>
+    <li><strong>Timeouts and retries:</strong> Every external call must have a timeout + bounded retry</li>
+    <li><strong>Graceful degradation:</strong> Serve cached content when database is down</li>
+  </ul>
+
+  <h3>Zero Downtime Deployment Strategies</h3>
+  <div class="table-wrapper">
+  <table>
+    <tr><th>Strategy</th><th>How</th><th>Rollback</th><th>Cost</th><th>Risk</th></tr>
+    <tr><td>Rolling Update</td><td>Replace pods one by one</td><td>Automatic via K8s</td><td>Low</td><td>Brief mixed versions</td></tr>
+    <tr><td>Blue-Green</td><td>Full parallel env, switch traffic</td><td>Instant (switch back)</td><td>2x infra cost</td><td>Low</td></tr>
+    <tr><td>Canary</td><td>Route 5% → new, ramp up</td><td>Route back to old</td><td>Slight increase</td><td>Very low</td></tr>
+    <tr><td>A/B Testing</td><td>Split by user segment</td><td>Change routing rule</td><td>Moderate</td><td>Low</td></tr>
+    <tr><td>Recreate</td><td>Stop all, start new</td><td>None (downtime)</td><td>None</td><td>High (downtime)</td></tr>
+  </table>
+  </div>
+
+  <div class="diagram">BLUE-GREEN DEPLOYMENT:
+
+  Before:                              After:
+  ┌─────────┐   100% traffic          ┌─────────┐   0% traffic
+  │ BLUE    │<──────────────          │ BLUE    │
+  │ v1.0    │   (active)              │ v1.0    │   (idle)
+  └─────────┘                         └─────────┘
+
+  ┌─────────┐   0% traffic            ┌─────────┐   100% traffic
+  │ GREEN   │                         │ GREEN   │<──────────────
+  │ v2.0    │   (idle)                │ v2.0    │   (active)
+  └─────────┘                         └─────────┘
+
+CANARY DEPLOYMENT:
+
+  v1.0 (old)  ←── 95% traffic
+  v2.0 (new)  ←── 5% traffic
+
+  After testing → 50/50 → 100% to v2.0</div>
+
+  <h3>Interview Questions — System Design</h3>
+  <div class="qa-block">
+    <div class="question">Design a deployment pipeline for a high-traffic e-commerce site (10M users).</div>
+    <div class="answer">1) <strong>Source:</strong> GitHub + branch protection (required reviewers, passing tests). 2) <strong>CI:</strong> GitHub Actions — lint, unit, integration tests in parallel. Security scan (Trivy, Snyk). 3) <strong>Artifact:</strong> Docker image pushed to ECR, tagged with git SHA. 4) <strong>Staging:</strong> Auto-deploy to staging EKS. Run smoke + load tests. 5) <strong>Production:</strong> Manual approval gate. Canary deploy 5% → 20% → 100% with automated rollback on error rate spike. 6) <strong>Monitoring:</strong> Prometheus alerts, Grafana dashboards, PagerDuty for on-call. 7) <strong>Rollback:</strong> <code>kubectl rollout undo</code> in &lt;2 minutes.</div>
+  </div>
+  <div class="qa-block">
+    <div class="question">How do you achieve database zero-downtime migrations in CI/CD?</div>
+    <div class="answer">Use expand-contract (parallel change) pattern: 1) <strong>Expand:</strong> Deploy migration that adds new column as nullable (backward compatible). Run alongside old code. 2) <strong>Migrate:</strong> Backfill existing rows. 3) <strong>Contract:</strong> Deploy new application code that uses new column. 4) <strong>Cleanup:</strong> Remove old column in a later migration. Never: rename columns in one step, add NOT NULL without default, drop columns while old code still runs. Use tools like Flyway or Liquibase with versioned migrations in the repo.</div>
+  </div>
+</div>
+
+<!-- PART 4: Interview Master, Projects, Cheat Sheets, Errors, Resume -->
+
+<!-- ======================== INTERVIEW MASTER ======================== -->
+<div class="section" id="interviews">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(245,158,11,0.15);">🎯</div>
+    <h2>Interview Master Section</h2>
+    <span class="level-tag badge-orange badge">All Levels</span>
+  </div>
+
+  <h3>Beginner Questions (0–1 year)</h3>
+  <div class="qa-block">
+    <div class="question">What is DevOps and why is it important?</div>
+    <div class="answer">DevOps is a culture and set of practices that combines software development (Dev) and IT operations (Ops) to shorten the development lifecycle and deliver high quality software continuously. It breaks down the traditional wall between developers (write code) and operations (run infrastructure). Key benefits: faster releases (from months to hours), more reliable systems, quicker recovery from failures, and better collaboration. Companies like Netflix, Amazon, and Google release code thousands of times per day using DevOps principles.</div>
+  </div>
+  <div class="qa-block">
+    <div class="question">What is the difference between Docker and a Virtual Machine?</div>
+    <div class="answer">VMs virtualize hardware — each VM has a full OS (GBs of overhead), managed by a hypervisor. Boot time: minutes. Containers share the host OS kernel — only the app and its dependencies are packaged. Size: MBs. Boot time: milliseconds. Containers are more lightweight and faster, but less isolated (share kernel). VMs offer stronger isolation. In practice, containers run inside VMs in production (EC2 running Docker or K8s).</div>
+  </div>
+  <div class="qa-block">
+    <div class="question">Explain what version control is and why it matters.</div>
+    <div class="answer">Version control (Git) tracks every change to code — who made it, when, and why. Benefits: 1) History — revert to any previous version. 2) Collaboration — multiple developers work simultaneously without overwriting each other. 3) Branching — experiment safely without affecting main codebase. 4) Audit trail — required for compliance in many industries. Without it, teams email zip files of code, accidentally overwrite each other's work, and can't recover from bugs.</div>
+  </div>
+  <div class="qa-block">
+    <div class="question">What is SSH and how does key-based authentication work?</div>
+    <div class="answer">SSH (Secure Shell) is an encrypted protocol for remote server access. Key-based auth uses asymmetric cryptography: you have a private key (never leave your machine) and a public key (placed on server in ~/.ssh/authorized_keys). When connecting, the server sends a challenge encrypted with your public key — only your private key can decrypt it, proving your identity without sending a password over the network. More secure than passwords: no brute-force risk, no phishing. Generate with: <code>ssh-keygen -t ed25519 -C "email@example.com"</code>.</div>
+  </div>
+
+  <h3>Intermediate Questions (2–4 years)</h3>
+  <div class="qa-block">
+    <div class="question">How would you implement zero-downtime deployments?</div>
+    <div class="answer">Multiple approaches: 1) Rolling update (K8s default): replace pods one at a time, keep minAvailable=1. 2) Blue-Green: run two identical environments, switch load balancer. Instant rollback by switching back. 3) Canary: route 5% traffic to new version, monitor error rates, gradually increase. 4) Feature flags: deploy code with feature disabled, enable for users gradually. Key requirements for all: health checks, graceful shutdown (SIGTERM handling, drain connections), session affinity or stateless design, database migration backward compatibility.</div>
+  </div>
+  <div class="qa-block">
+    <div class="question">Explain Kubernetes networking — how does a request reach a Pod?</div>
+    <div class="answer">Request flow: 1) Client → LoadBalancer (cloud LB, e.g. ELB) 2) → Ingress Controller (nginx-ingress pod) based on host/path rules 3) → Service (ClusterIP) via iptables/IPVS rules managed by kube-proxy 4) → Pod (selected by service's label selector). Key: every Pod gets a unique cluster-IP. Services provide stable DNS names and load-balance across pods. kube-proxy on each node programs iptables rules that intercept service traffic and forward to pod IPs. Overlay networks (Calico, Flannel) enable cross-node pod communication.</div>
+  </div>
+  <div class="qa-block">
+    <div class="question">What is Terraform state and why must it be stored remotely?</div>
+    <div class="answer">Terraform state is a JSON file (.tfstate) that maps your HCL resources to real cloud resources. Terraform reads state to know what exists before computing a plan. Remote storage (S3 + DynamoDB) is critical for teams because: 1) Shared source of truth — all team members and CI/CD see the same state. 2) State locking (DynamoDB) — prevents two concurrent applies from corrupting state. 3) Backup — S3 versioning lets you recover from corrupted state. 4) Encryption — state contains sensitive values (passwords, keys). Local state in git = accidental secret exposure + merge conflicts.</div>
+  </div>
+  <div class="qa-block">
+    <div class="question">How do you monitor a microservices application?</div>
+    <div class="answer">Three pillars: 1) Metrics (Prometheus): RED method — Rate (requests/sec), Errors (error rate), Duration (latency p50/p99) per service. Alert on SLO violations. 2) Logs (ELK/Loki): Structured JSON logs with correlation IDs. Centralize all logs. Alert on error patterns. 3) Traces (Jaeger/Zipkin): Distributed tracing — follow a request across 10+ microservices. Find where latency comes from. Also: synthetic monitoring (uptime checks), dashboards in Grafana, on-call rotation with PagerDuty. Use SLOs (Service Level Objectives) to define acceptable reliability.</div>
+  </div>
+
+  <h3>Advanced / Senior Questions (5+ years)</h3>
+  <div class="qa-block">
+    <div class="question">Your team is deploying 50+ times per day. How do you maintain stability?</div>
+    <div class="answer">1) Automated testing at every layer — unit (fast), integration, e2e, contract tests. 2) Progressive delivery: every deploy starts as canary (1% → 10% → 100%). 3) Automated rollback: if error rate spikes &gt;1% or latency doubles during deploy, automated system rolls back. 4) Feature flags: decouple deploy from release — code ships dark, feature enabled independently. 5) Observability: real-time dashboards showing golden signals during every deploy. 6) Immutable infrastructure: each deploy creates new instances, never modify in place. 7) Database migrations backward-compatible always. 8) Chaos engineering: intentional failure injection to validate resilience.</div>
+  </div>
+  <div class="qa-block">
+    <div class="question">How would you design a multi-region disaster recovery strategy?</div>
+    <div class="answer">Depends on RTO/RPO requirements: 1) Active-Passive (Pilot Light): minimal infrastructure in DR region, scale up on disaster. RPO: hours. RTO: hours. Cheapest. 2) Warm Standby: reduced-scale running environment in DR, scale up fast. RPO: minutes. RTO: minutes. 3) Active-Active: traffic served from both regions simultaneously. RPO: near-zero. RTO: seconds. Most expensive. Key components: Route 53 health checks + latency routing, data replication (RDS Read Replica promote, DynamoDB Global Tables, S3 Cross-Region Replication), regular DR drills (monthly failover tests), runbooks for each failure scenario.</div>
+  </div>
+  <div class="qa-block">
+    <div class="question">How do you handle secrets rotation without downtime?</div>
+    <div class="answer">1) Use dynamic secrets (HashiCorp Vault): application requests credential with TTL, Vault creates/rotates automatically. 2) Dual-credential rotation: step 1 create new credential, step 2 update app to accept both, step 3 rotate all apps to new credential, step 4 revoke old. 3) External Secrets Operator in K8s: Vault/AWS Secrets Manager → K8s Secret, triggers pod rolling restart on change. 4) Application must handle credential refresh without restart (connection pool reconnect). 5) Never hard-code secrets in images, env vars in plain text, or config files checked into git.</div>
+  </div>
+
+  <h3>Scenario-Based Questions</h3>
+  <div class="scenario">
+    <div class="scenario-tag">Real-World Scenario</div>
+    <h4>Production database is at 95% disk capacity. You have 1 hour before it fills up.</h4>
+    <p><strong>Immediate (0-10 min):</strong> Alert team, check what's consuming space: <code>du -sh /var/lib/mysql/*</code>. Check for binary logs: <code>SHOW BINARY LOGS;</code> If safe: <code>PURGE BINARY LOGS BEFORE NOW() - INTERVAL 3 DAY;</code></p>
+    <p><strong>Short-term (10-30 min):</strong> Delete old log files if not needed. Clear temp tables. Move old partitions to archive storage.</p>
+    <p><strong>Medium-term (30-60 min):</strong> Add disk volume (AWS: modify EBS volume, expand filesystem online). Trigger manual backup and archive old data.</p>
+    <p><strong>Post-incident:</strong> Set CloudWatch alarm at 75% disk. Implement automated log rotation. Schedule regular archival jobs. Review data retention policy.</p>
+  </div>
+
+  <div class="scenario">
+    <div class="scenario-tag">Real-World Scenario</div>
+    <h4>After a deploy, 502 errors spike to 30%. Rollback or fix-forward?</h4>
+    <p><strong>Decision criteria:</strong> Time to fix vs time to rollback.</p>
+    <p>1) Check new pod logs: <code>kubectl logs -l app=myapp --since=5m</code>. Common causes: missing env var, wrong port, failed DB connection.</p>
+    <p>2) If root cause clear and fix is &lt;5 lines: fix forward — patch, push, pipeline deploys in 3 min.</p>
+    <p>3) If root cause unclear: rollback immediately: <code>kubectl rollout undo deployment/myapp</code>. Then investigate with full logs.</p>
+    <p>4) Communicate: Slack/status page update within 5 minutes of detection.</p>
+    <p>5) Post-mortem within 48 hours: timeline, root cause, action items.</p>
+  </div>
+
+  <h3>HR & Behavioral Questions</h3>
+  <div class="qa-block">
+    <div class="question">Tell me about a production incident you handled. How did you resolve it?</div>
+    <div class="answer">Use STAR format — Situation, Task, Action, Result. Example structure: "We had a memory leak in production that was causing pods to OOMKill every 4-6 hours, impacting 15% of users. My task was to find and fix it under pressure. I used kubectl top + Prometheus to identify the specific pod and service. I added heap profiling and identified a connection pool that wasn't being released. I deployed a fix, monitored for 2 hours with no recurrence, and added a memory alert at 75% to catch it early next time. This reduced incidents by 100% for that service and I documented it as a runbook."</div>
+  </div>
+  <div class="qa-block">
+    <div class="question">How do you stay updated with DevOps tools and practices?</div>
+    <div class="answer">Good answers: Follow CNCF landscape for cloud-native tools. Read: KubeWeekly, DevOps Weekly newsletter, AWS blog, HashiCorp blog. Follow practitioners on LinkedIn/Twitter (Kelsey Hightower, Liz Fong-Jones). Attend KubeCon, AWS re:Invent talks (free on YouTube). Personal lab: home lab or free-tier AWS for experimenting. Certifications: CKA, AWS SAA, Terraform Associate. Contribute to open source or write about what you learn (blog/GitHub).</div>
+  </div>
+  <div class="qa-block">
+    <div class="question">How do you handle disagreements with developers about deployment procedures?</div>
+    <div class="answer">Empathy first — understand their concern (usually speed vs safety). Bring data: show historical incident rate, mean time to recover. Collaborate on solutions that meet both needs (e.g., feature flags let developers ship fast while ops controls risk). Document procedures so it's not personal — "the policy says X, let's follow it and revisit if it's wrong." If persistent disagreement, escalate to engineering leadership with written proposal from both sides. The goal is shared: reliable, fast delivery.</div>
+  </div>
+</div>
+
+<!-- ======================== PROJECTS ======================== -->
+<div class="section" id="projects">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(16,185,129,0.15);">🚀</div>
+    <h2>Real-World Projects</h2>
+    <span class="level-tag badge-green badge">Hands-On</span>
+  </div>
+
+  <!-- PROJECT 1 -->
+  <div class="project-card">
+    <h3>Project 1 — Deploy Static App with Docker</h3>
+    <div class="project-meta">
+      <span>Level: Beginner</span>
+      <span>Time: 2-3 hours</span>
+      <span>Tools: Docker, Nginx</span>
+    </div>
+
+    <h4>Architecture</h4>
+    <div class="diagram">User → Browser → Nginx Container (port 80) → Static HTML/CSS/JS files</div>
+
+    <h4>Steps</h4>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><div class="step-content">
+        Create a simple static website:
+        <pre><code>mkdir myapp && cd myapp
+cat > index.html << 'EOF'
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;&lt;title&gt;My DevOps App&lt;/title&gt;&lt;/head&gt;
+&lt;body&gt;
+  &lt;h1&gt;Deployed with Docker!&lt;/h1&gt;
+  &lt;p&gt;Version: &lt;span id="version"&gt;1.0.0&lt;/span&gt;&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+EOF</code></pre>
+      </div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-content">
+        Create Dockerfile:
+        <pre><code>cat > Dockerfile << 'EOF'
+FROM nginx:alpine
+COPY index.html /usr/share/nginx/html/
+COPY nginx.conf /etc/nginx/nginx.conf
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+EOF</code></pre>
+      </div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-content">
+        Create nginx.conf:
+        <pre><code>events { worker_connections 1024; }
+http {
+  server {
+    listen 80;
+    root /usr/share/nginx/html;
+    gzip on;
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-Content-Type-Options "nosniff";
+  }
+}</code></pre>
+      </div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-content">
+        Build and run:
+        <pre><code>docker build -t myapp:1.0 .
+docker run -d -p 8080:80 --name myapp myapp:1.0
+# Open http://localhost:8080</code></pre>
+      </div></div>
+      <div class="step"><div class="step-num">5</div><div class="step-content">
+        Add .dockerignore and verify size:
+        <pre><code>echo "*.md\n.git\nnode_modules" > .dockerignore
+docker images myapp        # should be ~10MB
+docker inspect myapp</code></pre>
+      </div></div>
+    </div>
+
+    <div class="success-box">Expected output: Website accessible at http://localhost:8080. Image size under 15MB using Alpine base.</div>
+    <div class="tip-box">Extension: Push to Docker Hub, then deploy to AWS EC2 or App Runner.</div>
+  </div>
+
+  <!-- PROJECT 2 -->
+  <div class="project-card">
+    <h3>Project 2 — CI/CD Pipeline with GitHub Actions + Docker</h3>
+    <div class="project-meta">
+      <span>Level: Intermediate</span>
+      <span>Time: 4-6 hours</span>
+      <span>Tools: GitHub Actions, Docker, EC2</span>
+    </div>
+
+    <h4>Architecture</h4>
+    <div class="diagram">GitHub Push → GitHub Actions → Build & Test → Docker Build → ECR/DockerHub → Deploy to EC2</div>
+
+    <h4>Full Pipeline Setup</h4>
+    <pre><code># .github/workflows/main.yml
+name: Build and Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'npm' }
+      - run: npm ci
+      - run: npm test
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: ${{ github.ref == 'refs/heads/main' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo ${{ secrets.GITHUB_TOKEN }} | \
+              docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            docker pull ghcr.io/${{ github.repository }}:latest
+            docker stop myapp || true
+            docker rm myapp || true
+            docker run -d \
+              --name myapp \
+              -p 80:3000 \
+              --restart unless-stopped \
+              -e NODE_ENV=production \
+              ghcr.io/${{ github.repository }}:latest
+            docker image prune -f</code></pre>
+
+    <div class="success-box">Expected outcome: Every push to main builds, tests, and deploys automatically within 3-5 minutes.</div>
+  </div>
+
+  <!-- PROJECT 3 -->
+  <div class="project-card">
+    <h3>Project 3 — Kubernetes Deployment with Full Monitoring</h3>
+    <div class="project-meta">
+      <span>Level: Advanced</span>
+      <span>Time: 1-2 days</span>
+      <span>Tools: K8s, Helm, Prometheus, Grafana, Terraform</span>
+    </div>
+
+    <h4>Architecture</h4>
+    <div class="diagram">                Internet
+                    │
+            ┌───────┴────────┐
+            │ Ingress-Nginx  │  (Helm)
+            └───────┬────────┘
+                    │
+         ┌──────────┼──────────┐
+         │          │          │
+    ┌────┴───┐ ┌───┴────┐ ┌───┴────┐
+    │ App    │ │  App   │ │  App   │  (3 replicas)
+    │ Pod 1  │ │  Pod 2 │ │  Pod 3 │
+    └────┬───┘ └───┬────┘ └───┬────┘
+         │         │          │
+    ┌────┴─────────┴──────────┴────┐
+    │         PostgreSQL (StatefulSet)│
+    └───────────────────────────────┘
+
+    Monitoring Stack:
+    Prometheus → scrapes all pods
+    Grafana    → dashboards
+    Alertmanager → Slack alerts</div>
+
+    <h4>Step-by-Step</h4>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><div class="step-content">
+        Bootstrap cluster (use EKS or kind for local):
+        <pre><code># Local: kind
+kind create cluster --name devops-demo --config kind-config.yaml
+
+# AWS EKS via Terraform
+module "eks" {
+  source  = "terraform-aws-modules/eks/aws"
+  version = "~> 20.0"
+  cluster_name    = "devops-demo"
+  cluster_version = "1.29"
+  vpc_id          = module.vpc.vpc_id
+  subnet_ids      = module.vpc.private_subnets
+  eks_managed_node_groups = {
+    main = {
+      min_size     = 2
+      max_size     = 10
+      desired_size = 3
+      instance_types = ["t3.medium"]
+    }
+  }
+}</code></pre>
+      </div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-content">
+        Install monitoring stack via Helm:
+        <pre><code># Add repos
+helm repo add prometheus-community \
+  https://prometheus-community.github.io/helm-charts
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo update
+
+# Install kube-prometheus-stack (Prometheus + Grafana + Alertmanager)
+helm upgrade --install monitoring \
+  prometheus-community/kube-prometheus-stack \
+  --namespace monitoring --create-namespace \
+  --set grafana.adminPassword=securepassword \
+  --set prometheus.prometheusSpec.retention=15d \
+  --set alertmanager.config.receivers[0].name=slack \
+  -f monitoring-values.yaml</code></pre>
+      </div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-content">
+        Deploy app with all K8s objects:
+        <pre><code>kubectl apply -f - << 'EOF'
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp
+  namespace: production
+spec:
+  replicas: 3
+  selector:
+    matchLabels: {app: myapp}
+  template:
+    metadata:
+      labels: {app: myapp}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3000"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: myapp
+        image: myorg/myapp:latest
+        ports:
+        - containerPort: 3000
+        resources:
+          requests: {memory: 128Mi, cpu: 100m}
+          limits: {memory: 256Mi, cpu: 500m}
+        readinessProbe:
+          httpGet: {path: /health, port: 3000}
+          initialDelaySeconds: 10
+        livenessProbe:
+          httpGet: {path: /health, port: 3000}
+          initialDelaySeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: myapp
+  namespace: production
+spec:
+  selector: {app: myapp}
+  ports:
+  - port: 80
+    targetPort: 3000
+EOF</code></pre>
+      </div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-content">
+        Install and configure Ingress:
+        <pre><code>helm upgrade --install ingress-nginx \
+  ingress-nginx/ingress-nginx \
+  --namespace ingress-nginx --create-namespace \
+  --set controller.metrics.enabled=true \
+  --set controller.metrics.serviceMonitor.enabled=true
+
+# Apply Ingress rule
+kubectl apply -f ingress.yaml</code></pre>
+      </div></div>
+      <div class="step"><div class="step-num">5</div><div class="step-content">
+        Verify everything:
+        <pre><code>kubectl get pods -n production
+kubectl get pods -n monitoring
+# Port-forward Grafana
+kubectl port-forward -n monitoring svc/monitoring-grafana 3000:80
+# Open localhost:3000, login with admin/securepassword
+# Import dashboard: Kubernetes/Compute Resources/Namespace</code></pre>
+      </div></div>
+    </div>
+
+    <div class="success-box">Expected: 3-replica app running, metrics scraped by Prometheus, visible in Grafana, alerts configured for CPU/Memory/error rates.</div>
+  </div>
+</div>
+
+<!-- ======================== CHEAT SHEETS ======================== -->
+<div class="section" id="cheatsheets">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(79,142,247,0.15);">📋</div>
+    <h2>Command Cheat Sheets</h2>
+    <span class="level-tag badge-blue badge">Quick Reference</span>
+  </div>
+
+  <h3>Linux Cheat Sheet</h3>
+  <div class="cheat-grid">
+    <div class="cheat-card">
+      <h4>File & Directory</h4>
+<pre><code>ls -lah
+pwd; mkdir -p a/b/c
+cp -r src dst
+mv old new
+rm -rf dir
+find / -name "*.conf"
+chmod 755 file
+chown user:grp file</code></pre>
+    </div>
+    <div class="cheat-card">
+      <h4>Process</h4>
+<pre><code>ps aux | grep app
+kill -9 PID
+pkill nginx
+nohup cmd &amp;
+jobs; fg 1
+htop
+lsof -i :3000
+systemctl restart svc</code></pre>
+    </div>
+    <div class="cheat-card">
+      <h4>Network</h4>
+<pre><code>ip addr; ip route
+ss -tulpn
+curl -I http://url
+wget -O file url
+traceroute ip
+dig domain
+nc -zv host 80
+iptables -L -n</code></pre>
+    </div>
+    <div class="cheat-card">
+      <h4>Text Processing</h4>
+<pre><code>grep -rn "ERR" /log/
+awk '{print $1}' f
+sed 's/old/new/g' f
+tail -f app.log
+head -20 file
+sort -rn | uniq -c
+wc -l file
+cut -d: -f1 file</code></pre>
+    </div>
+  </div>
+
+  <h3>Docker Cheat Sheet</h3>
+  <div class="cheat-grid">
+    <div class="cheat-card">
+      <h4>Images</h4>
+<pre><code>docker build -t app:1.0 .
+docker pull nginx:alpine
+docker push myorg/app:1.0
+docker images
+docker rmi image_id
+docker image prune -a
+docker history app:1.0</code></pre>
+    </div>
+    <div class="cheat-card">
+      <h4>Containers</h4>
+<pre><code>docker run -d -p 80:3000 app
+docker ps -a
+docker stop id
+docker rm id
+docker exec -it id sh
+docker logs -f --tail 100 id
+docker stats
+docker inspect id</code></pre>
+    </div>
+    <div class="cheat-card">
+      <h4>Compose</h4>
+<pre><code>docker compose up -d
+docker compose down
+docker compose logs -f
+docker compose ps
+docker compose exec db psql
+docker compose pull
+docker compose build --no-cache</code></pre>
+    </div>
+    <div class="cheat-card">
+      <h4>Cleanup</h4>
+<pre><code>docker system prune -af
+docker volume prune
+docker network prune
+docker image prune -a
+# Remove dangling images:
+docker rmi $(docker images -f "dangling=true" -q)</code></pre>
+    </div>
+  </div>
+
+  <h3>Kubernetes Cheat Sheet</h3>
+  <div class="cheat-grid">
+    <div class="cheat-card">
+      <h4>Get Resources</h4>
+<pre><code>kubectl get pods -A
+kubectl get svc -n ns
+kubectl get deploy -o wide
+kubectl get nodes
+kubectl describe pod name
+kubectl get events --sort-by=.lastTimestamp</code></pre>
+    </div>
+    <div class="cheat-card">
+      <h4>Debug</h4>
+<pre><code>kubectl logs pod -f
+kubectl logs pod --previous
+kubectl exec -it pod -- sh
+kubectl port-forward pod 8080:80
+kubectl top pods
+kubectl top nodes
+kubectl get pod -o yaml</code></pre>
+    </div>
+    <div class="cheat-card">
+      <h4>Deploy</h4>
+<pre><code>kubectl apply -f manifest.yaml
+kubectl delete -f manifest.yaml
+kubectl set image deploy/app c=img:v2
+kubectl rollout status deploy/app
+kubectl rollout undo deploy/app
+kubectl scale deploy/app --replicas=5
+kubectl rollout history deploy/app</code></pre>
+    </div>
+    <div class="cheat-card">
+      <h4>Config</h4>
+<pre><code>kubectl config get-contexts
+kubectl config use-context ctx
+kubectl config set-context --current --namespace=ns
+kubectl create secret generic s --from-literal=k=v
+kubectl create configmap cm --from-file=config.properties</code></pre>
+    </div>
+  </div>
+
+  <h3>Git Cheat Sheet</h3>
+  <div class="cheat-grid">
+    <div class="cheat-card">
+      <h4>Daily</h4>
+<pre><code>git status
+git diff --staged
+git add -p       # interactive
+git commit -m "msg"
+git log --oneline --graph
+git stash / stash pop</code></pre>
+    </div>
+    <div class="cheat-card">
+      <h4>Branches</h4>
+<pre><code>git switch -c feature/x
+git switch main
+git merge feature/x
+git rebase main
+git branch -d feature/x
+git push -u origin feature/x</code></pre>
+    </div>
+    <div class="cheat-card">
+      <h4>Undo</h4>
+<pre><code>git revert HEAD  # safe
+git reset --soft HEAD~1
+git reset --hard HEAD~1
+git restore file.txt
+git reflog       # history
+git cherry-pick SHA</code></pre>
+    </div>
+    <div class="cheat-card">
+      <h4>Remote</h4>
+<pre><code>git remote -v
+git fetch origin
+git pull --rebase origin main
+git push origin main
+git push --delete origin branch
+git remote prune origin</code></pre>
+    </div>
+  </div>
+
+  <h3>AWS CLI Cheat Sheet</h3>
+  <div class="cheat-grid">
+    <div class="cheat-card">
+      <h4>EC2</h4>
+<pre><code>aws ec2 describe-instances
+aws ec2 start-instances --instance-ids i-xxx
+aws ec2 stop-instances --instance-ids i-xxx
+aws ec2 describe-security-groups
+aws ec2 describe-vpcs</code></pre>
+    </div>
+    <div class="cheat-card">
+      <h4>S3</h4>
+<pre><code>aws s3 ls s3://bucket
+aws s3 cp file.txt s3://bucket/
+aws s3 sync ./dir s3://bucket/
+aws s3 rm s3://bucket/file.txt
+aws s3 mb s3://new-bucket</code></pre>
+    </div>
+    <div class="cheat-card">
+      <h4>EKS</h4>
+<pre><code>aws eks list-clusters
+aws eks update-kubeconfig --name cluster --region us-east-1
+aws eks describe-cluster --name cluster
+aws eks list-nodegroups --cluster-name cluster</code></pre>
+    </div>
+    <div class="cheat-card">
+      <h4>IAM</h4>
+<pre><code>aws iam list-users
+aws iam create-user --user-name dev
+aws iam attach-user-policy --user-name dev --policy-arn arn:...
+aws iam list-roles
+aws sts get-caller-identity</code></pre>
+    </div>
+  </div>
+</div>
+
+<!-- ======================== COMMON ERRORS ======================== -->
+<div class="section" id="errors">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(239,68,68,0.15);">🐛</div>
+    <h2>Common Errors & Fixes</h2>
+    <span class="level-tag badge-orange badge">Troubleshooting</span>
+  </div>
+
+  <div class="table-wrapper">
+  <table>
+    <tr><th>Error</th><th>Cause</th><th>Fix</th></tr>
+    <tr><td><code>Permission denied (publickey)</code></td><td>SSH key not added or wrong user</td><td><code>ssh-add ~/.ssh/id_ed25519</code> or check <code>~/.ssh/authorized_keys</code> on server</td></tr>
+    <tr><td><code>EACCES: permission denied</code></td><td>npm install as root, wrong dir permissions</td><td><code>sudo chown -R $USER ~/.npm</code></td></tr>
+    <tr><td>Docker: <code>port already in use</code></td><td>Another process on that port</td><td><code>ss -tulpn | grep :8080</code> then kill or change port</td></tr>
+    <tr><td>K8s: <code>ImagePullBackOff</code></td><td>Wrong image name, missing registry creds</td><td>Check image name, create imagePullSecret, verify registry access</td></tr>
+    <tr><td>K8s: <code>OOMKilled</code></td><td>Container exceeded memory limit</td><td>Increase limits or fix memory leak in app</td></tr>
+    <tr><td>Terraform: <code>Error acquiring the state lock</code></td><td>Previous apply crashed, lock stuck</td><td><code>terraform force-unlock LOCK_ID</code></td></tr>
+    <tr><td>Terraform: <code>Resource already exists</code></td><td>Resource created outside Terraform</td><td><code>terraform import resource.name id</code></td></tr>
+    <tr><td>Ansible: <code>unreachable</code></td><td>SSH connection failed</td><td>Check host IP, SSH key, security groups</td></tr>
+    <tr><td>Git: <code>rejected (non-fast-forward)</code></td><td>Remote has commits you don't have</td><td><code>git pull --rebase origin main</code> then push</td></tr>
+    <tr><td>Nginx: <code>502 Bad Gateway</code></td><td>Backend not running or wrong port</td><td>Check backend service, verify proxy_pass URL</td></tr>
+    <tr><td>Docker: <code>no space left on device</code></td><td>Docker images/containers filling disk</td><td><code>docker system prune -af</code></td></tr>
+    <tr><td>AWS: <code>UnauthorizedOperation</code></td><td>IAM permissions missing</td><td>Check IAM policy, attach required permission</td></tr>
+    <tr><td>K8s: <code>Pending (Insufficient memory)</code></td><td>Nodes don't have enough resources</td><td>Add nodes to cluster or reduce resource requests</td></tr>
+    <tr><td><code>CORS error</code></td><td>Browser blocked cross-origin request</td><td>Add Access-Control-Allow-Origin header on API server</td></tr>
+  </table>
+  </div>
+</div>
+
+<!-- ======================== RESUME TIPS ======================== -->
+<div class="section" id="resume">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(124,58,237,0.15);">📄</div>
+    <h2>Resume Tips for DevOps Roles</h2>
+    <span class="level-tag badge-purple badge">Career</span>
+  </div>
+
+  <h3>What Recruiters Look For</h3>
+  <div class="compare-grid">
+    <div class="compare-card">
+      <h4 style="color:var(--green)">For Freshers / 0-1yr</h4>
+      <ul>
+        <li>GitHub with actual projects (not just tutorials)</li>
+        <li>Linux fundamentals (RHCSA or similar)</li>
+        <li>Docker proficiency shown in projects</li>
+        <li>Basic CI/CD (GitHub Actions)</li>
+        <li>At least one cloud certification (AWS SAA)</li>
+        <li>Scripting: bash, Python basics</li>
+      </ul>
+    </div>
+    <div class="compare-card">
+      <h4 style="color:var(--accent)">For 2-5 yrs</h4>
+      <ul>
+        <li>Production K8s experience (real incidents handled)</li>
+        <li>IaC: Terraform or CloudFormation</li>
+        <li>CI/CD pipelines you designed, not just used</li>
+        <li>Monitoring setup: Prometheus/Grafana</li>
+        <li>Cloud expertise: AWS/Azure certified</li>
+        <li>Specific impact: "Reduced deploy time from 45m to 8m"</li>
+      </ul>
+    </div>
+    <div class="compare-card">
+      <h4 style="color:#a78bfa)">For Senior / Lead</h4>
+      <ul>
+        <li>Platform engineering experience</li>
+        <li>Cost optimization (specific $ saved)</li>
+        <li>Security posture improvements</li>
+        <li>Team leadership / mentoring</li>
+        <li>Architecture decisions and their outcomes</li>
+        <li>Multi-cloud or hybrid cloud experience</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Resume Bullet Formula</h3>
+  <div class="info-box">Formula: <strong>ACTION VERB + WHAT YOU DID + HOW + MEASURABLE RESULT</strong></div>
+
+  <div class="table-wrapper">
+  <table>
+    <tr><th>Weak (Don't write)</th><th>Strong (Write this)</th></tr>
+    <tr><td>Managed Kubernetes cluster</td><td>Designed and maintained a 50-node EKS cluster serving 2M daily requests, achieving 99.95% uptime through automated failover and HPA</td></tr>
+    <tr><td>Worked on CI/CD pipelines</td><td>Built GitHub Actions CI/CD pipeline reducing deployment time from 40 minutes to 7 minutes and enabling 15+ daily deployments</td></tr>
+    <tr><td>Used Terraform</td><td>Migrated 120 AWS resources to Terraform IaC, eliminating manual provisioning errors and cutting environment setup time from 3 days to 20 minutes</td></tr>
+    <tr><td>Monitored application</td><td>Implemented Prometheus + Grafana monitoring with 45 custom alerts, reducing MTTR (Mean Time to Resolution) from 4 hours to 25 minutes</td></tr>
+    <tr><td>Worked on cost optimization</td><td>Rightsized EC2 instances and implemented Spot usage for CI/CD, saving $18,000/month (42% cost reduction)</td></tr>
+  </table>
+  </div>
+
+  <h3>Certifications Roadmap</h3>
+  <div class="roadmap-track">
+    <div class="roadmap-item">
+      <div class="roadmap-phase" style="color:var(--green)">Start Here</div>
+      <h4>AWS Cloud Practitioner / Linux Foundation LFCS</h4>
+      <p>2-4 weeks prep. Validates cloud/Linux fundamentals.</p>
+    </div>
+    <div class="roadmap-item">
+      <div class="roadmap-phase" style="color:var(--accent)">Intermediate</div>
+      <h4>AWS Solutions Architect Associate + CKA (Certified Kubernetes Administrator)</h4>
+      <p>2-3 months each. Core credentials most employers require.</p>
+    </div>
+    <div class="roadmap-item">
+      <div class="roadmap-phase" style="color:var(--accent2)">Advanced</div>
+      <h4>AWS DevOps Engineer Pro + Terraform Associate + CKAD/CKS</h4>
+      <p>Differentiate yourself for senior roles.</p>
+    </div>
+  </div>
+
+  <h3>Production Best Practices Summary</h3>
+  <ul>
+    <li><strong>Never hardcode secrets</strong> — use Vault, AWS Secrets Manager, or K8s Secrets with External Secrets Operator</li>
+    <li><strong>Immutable infrastructure</strong> — never SSH into prod to make changes; change comes through automation</li>
+    <li><strong>Everything in version control</strong> — infra code, app code, runbooks, configs</li>
+    <li><strong>Test in production-like environments</strong> — staging should mirror prod exactly</li>
+    <li><strong>Automate toil</strong> — if you do it more than twice, automate it</li>
+    <li><strong>Design for failure</strong> — assume any component can fail at any time</li>
+    <li><strong>Practice runbooks</strong> — document AND drill failure scenarios</li>
+    <li><strong>Blameless post-mortems</strong> — focus on systems, not people; share learnings</li>
+    <li><strong>Shift security left</strong> — scan code, dependencies, images in CI before production</li>
+    <li><strong>Resource limits always</strong> — every container must have CPU/memory limits in K8s</li>
+  </ul>
+</div>
+
+
+</main>
+</div>
+
+<script>
+function setRole(role) {
+  document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  // In a real implementation, this would show/hide level-specific content
+  const msg = {
+    'all': 'Showing all content for all experience levels.',
+    'fresher': 'Focus: Linux basics, Git, Docker fundamentals, CI/CD intro.',
+    'mid': 'Focus: Docker advanced, Kubernetes, CI/CD pipelines, Terraform, AWS.',
+    'senior': 'Focus: K8s advanced, System design, DevSecOps, Cost optimization, Team practices.'
+  };
+  console.log(msg[role]);
+}
+</script>
+</body>
+</html>
