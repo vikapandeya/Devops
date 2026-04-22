@@ -519,6 +519,41 @@ hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
     <a href="#setup3" class="toc-link">Setup 3 — Cloudflare + Terraform + ALB</a>
     <a href="#setup4" class="toc-link">Setup 4 — K8s Production Project</a>
   </div>
+  <div class="toc-section">
+    <div class="toc-section-title">Advanced Topics</div>
+    <a href="#sre" class="toc-link">M. SRE & Reliability</a>
+    <a href="#serverless" class="toc-link">N. AWS Lambda</a>
+    <a href="#ecs" class="toc-link">O. ECS / Fargate</a>
+    <a href="#k8s-advanced" class="toc-link">P. Kubernetes Advanced</a>
+    <a href="#istio" class="toc-link">Q. Istio Service Mesh</a>
+    <a href="#messaging" class="toc-link">R. Kafka &amp; SQS</a>
+    <a href="#database-devops" class="toc-link">S. Database DevOps</a>
+    <a href="#nginx" class="toc-link">T. Advanced Nginx</a>
+    <a href="#python-devops" class="toc-link">U. Python/boto3</a>
+    <a href="#otel" class="toc-link">V. OpenTelemetry</a>
+  </div>
+  <div class="toc-section">
+    <div class="toc-section-title">More Projects</div>
+    <a href="#project-serverless" class="toc-link">Project 5 — Serverless API</a>
+    <a href="#project-devsecops-pipeline" class="toc-link">Project 6 — DevSecOps Pipeline</a>
+    <a href="#project-wordpress-ha" class="toc-link">Project 7 — WordPress HA</a>
+    <a href="#project-ecs-microservices" class="toc-link">Project 8 — ECS Microservices</a>
+    <a href="#project-istio-mesh" class="toc-link">Project 9 — Istio Mesh</a>
+  </div>
+  <div class="toc-section">
+    <div class="toc-section-title">Cheat Sheets</div>
+    <a href="#cheat-terraform" class="toc-link">Terraform Cheat Sheet</a>
+    <a href="#cheat-ansible" class="toc-link">Ansible Cheat Sheet</a>
+    <a href="#cheat-helm" class="toc-link">Helm Cheat Sheet</a>
+    <a href="#cheat-kubectl" class="toc-link">kubectl Advanced</a>
+  </div>
+  <div class="toc-section">
+    <div class="toc-section-title">More Guides</div>
+    <a href="#cicd-advanced" class="toc-link">Advanced CI/CD Patterns</a>
+    <a href="#k8s-security" class="toc-link">K8s Security Hardening</a>
+    <a href="#interview-advanced" class="toc-link">Advanced Interview Q&amp;A</a>
+    <a href="#cost-optimization" class="toc-link">AWS Cost Optimization</a>
+  </div>
 </nav>
 
 <!-- MAIN CONTENT -->
@@ -6527,6 +6562,4368 @@ kubectl rollout status deployment/api -n production -w</code></pre>
     <div class="answer">1) <code>kubectl get pods -n production</code> — check pod status (Pending? ImagePullBackOff? CrashLoop?). 2) <code>kubectl describe pod &lt;pod&gt;</code> — read the Events section for root cause. 3) <code>kubectl logs &lt;pod&gt; --previous</code> — previous container logs. 4) <code>kubectl get events -n production --sort-by=.lastTimestamp</code> — cluster events. 5) If it's a bad image: <code>helm rollback myapp 1 -n production</code> — rolls back to previous Helm revision instantly. 6) If it's a config issue: fix values, run <code>helm upgrade</code> again. 7) After recovery: check why CI let a bad image through — add better smoke tests in the promote workflow.</div>
   </div>
 </div>
+
+
+<!-- NEW CONTENT PART 1: SRE, Serverless, ECS, K8s Advanced, Istio, Kafka -->
+
+<!-- ======================== SRE ======================== -->
+<div class="section" id="sre">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(16,185,129,0.15);">🛡️</div>
+    <h2>M. SRE — Site Reliability Engineering</h2>
+    <span class="level-tag badge-purple badge">Senior Level</span>
+  </div>
+
+  <div class="tip-box">Real-world analogy: SRE is like aviation safety — planes fly millions of times and almost never crash not by luck, but because every failure is studied, automated checks exist, and humans are kept away from repetitive error-prone tasks.</div>
+
+  <h3>SLI, SLO, SLA — The Foundation</h3>
+  <div class="table-wrapper">
+  <table>
+    <tr><th>Term</th><th>Definition</th><th>Real Example</th><th>Who owns it</th></tr>
+    <tr><td><strong>SLI</strong> (Indicator)</td><td>The metric you measure</td><td>% of HTTP requests returning 200 in &lt;200ms</td><td>Engineering</td></tr>
+    <tr><td><strong>SLO</strong> (Objective)</td><td>Target value for your SLI</td><td>99.9% of requests successful &lt;200ms, measured monthly</td><td>Engineering + Product</td></tr>
+    <tr><td><strong>SLA</strong> (Agreement)</td><td>Legal contract with penalty if SLO breached</td><td>"We guarantee 99.9% uptime or 10% credit"</td><td>Business + Legal</td></tr>
+    <tr><td><strong>Error Budget</strong></td><td>1 - SLO = allowed failure budget</td><td>99.9% SLO = 0.1% budget = 43.8 min/month of downtime</td><td>Engineering</td></tr>
+  </table>
+  </div>
+
+  <h3>Error Budget — The Key SRE Concept</h3>
+  <div class="diagram">Monthly Error Budget (99.9% SLO):
+  Total minutes/month: 43,800
+  Allowed failures:    43.8 minutes (0.1%)
+
+  ┌─────────────────────────────────────────────┐
+  │ Budget Consumed           │ Remaining        │
+  │ ██████████████████░░░░░   │ 30 min used      │
+  │ 30 min / 43.8 min         │ 13.8 min left    │
+  └─────────────────────────────────────────────┘
+
+  Budget HEALTHY → ship features fast, take risks
+  Budget WARNING → slow down, prioritize reliability
+  Budget EXHAUSTED → feature freeze, only reliability work
+  Budget NEGATIVE → incident review, no new deploys until root cause fixed</div>
+
+  <h3>Four Golden Signals (Google SRE Book)</h3>
+  <div class="compare-grid">
+    <div class="compare-card">
+      <h4 style="color:var(--accent)">Latency</h4>
+      <p>Time to serve a request. Track both successful AND failed request latency. Use p50, p95, p99 — NOT averages (averages hide tail latency).</p>
+      <pre><code>histogram_quantile(0.99,
+  rate(http_duration_seconds_bucket[5m])
+)</code></pre>
+    </div>
+    <div class="compare-card">
+      <h4 style="color:var(--orange)">Traffic</h4>
+      <p>How much demand your system handles. Requests/sec, queries/sec, messages/sec. Baseline it so you know what "normal" looks like.</p>
+      <pre><code>rate(http_requests_total[5m])</code></pre>
+    </div>
+    <div class="compare-card">
+      <h4 style="color:var(--red)">Errors</h4>
+      <p>Rate of failed requests — 5xx, timeouts, wrong content. Both explicit (500) and implicit (200 but wrong response body).</p>
+      <pre><code>rate(http_requests_total
+  {status=~"5.."}[5m]) /
+rate(http_requests_total[5m])</code></pre>
+    </div>
+    <div class="compare-card">
+      <h4 style="color:var(--green)">Saturation</h4>
+      <p>How "full" your service is — CPU %, memory %, queue depth, connection pool usage. Predict problems BEFORE they cause errors.</p>
+      <pre><code>100 - avg(irate(
+  node_cpu_seconds_total
+  {mode="idle"}[5m])) * 100</code></pre>
+    </div>
+  </div>
+
+  <h3>Toil — What SREs Eliminate</h3>
+  <div class="info-box">Toil = manual, repetitive, automatable work that scales linearly with service growth. Google's rule: keep toil below 50% of SRE time — the rest is engineering work that permanently reduces future toil.</div>
+
+  <div class="table-wrapper">
+  <table>
+    <tr><th>Toil Example</th><th>SRE Automation Solution</th></tr>
+    <tr><td>Manually restarting hung services</td><td>Kubernetes liveness probes + auto-restart</td></tr>
+    <tr><td>Adding capacity when traffic spikes</td><td>Auto Scaling Groups / HPA</td></tr>
+    <tr><td>Running the same deploy script 10x/day</td><td>CI/CD pipeline with one-click deploy</td></tr>
+    <tr><td>Manually rotating SSL certificates</td><td>cert-manager auto-renewal</td></tr>
+    <tr><td>Checking server health every morning</td><td>Prometheus alerts + Grafana dashboards</td></tr>
+    <tr><td>Cleaning up old log files weekly</td><td>logrotate + S3 lifecycle policies</td></tr>
+    <tr><td>Manually creating AWS resources</td><td>Terraform + GitOps</td></tr>
+  </table>
+  </div>
+
+  <h3>Incident Management Process</h3>
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div class="step-content"><strong>Detect</strong> — Alert fires via PagerDuty/OpsGenie → on-call engineer paged</div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-content"><strong>Respond</strong> — Acknowledge within SLA. Join incident Slack channel. Assign Incident Commander (IC)</div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-content"><strong>Mitigate first</strong> — Restore service ASAP (rollback, restart, reroute). Don't investigate root cause while service is down</div></div>
+    <div class="step"><div class="step-num">4</div><div class="step-content"><strong>Communicate</strong> — Update status page, notify affected customers, internal Slack every 30 min</div></div>
+    <div class="step"><div class="step-num">5</div><div class="step-content"><strong>Investigate</strong> — After service restored, find root cause using metrics, logs, traces</div></div>
+    <div class="step"><div class="step-num">6</div><div class="step-content"><strong>Post-mortem</strong> — Blameless write-up within 48h: timeline, root cause, contributing factors, action items with owners and deadlines</div></div>
+  </div>
+
+  <h3>Chaos Engineering</h3>
+  <pre><code># Chaos Engineering: deliberately inject failures to test resilience
+
+# AWS Fault Injection Simulator (FIS) — terminate random EC2
+aws fis create-experiment-template --cli-input-json '{
+  "description": "Terminate 1 random app EC2",
+  "targets": {
+    "appInstances": {
+      "resourceType": "aws:ec2:instance",
+      "resourceTags": {"Role": "app"},
+      "selectionMode": "COUNT(1)"
+    }
+  },
+  "actions": {
+    "terminateInstances": {
+      "actionId": "aws:ec2:terminate-instances",
+      "targets": {"Instances": "appInstances"}
+    }
+  },
+  "stopConditions": [{
+    "source": "aws:cloudwatch:alarm",
+    "value": "arn:aws:cloudwatch:...:alarm:ErrorRateHigh"
+  }],
+  "roleArn": "arn:aws:iam::123456789:role/FISRole"
+}'
+
+# Chaos Monkey (Netflix OSS) — randomly kill pods
+# For Kubernetes: Chaos Mesh / Litmus Chaos
+
+# Litmus ChaosEngine — kill random pods in namespace
+apiVersion: litmuschaos.io/v1alpha1
+kind: ChaosEngine
+metadata:
+  name: pod-kill-chaos
+  namespace: production
+spec:
+  appinfo:
+    appns: production
+    applabel: "app=api"
+    appkind: deployment
+  chaosServiceAccount: litmus-admin
+  experiments:
+  - name: pod-delete
+    spec:
+      components:
+        env:
+        - name: TOTAL_CHAOS_DURATION
+          value: "30"
+        - name: CHAOS_INTERVAL
+          value: "10"
+        - name: FORCE
+          value: "false"</code></pre>
+
+  <h3>On-Call Best Practices</h3>
+  <ul>
+    <li><strong>Runbooks for every alert</strong> — never have an alert without a documented response procedure</li>
+    <li><strong>Alert on symptoms, not causes</strong> — alert on "user-facing error rate" not "CPU high" (which may be harmless)</li>
+    <li><strong>Actionable alerts only</strong> — if you can't do anything about an alert, delete it</li>
+    <li><strong>On-call rotation</strong> — max 2 pages/night, compensate engineers for out-of-hours pages</li>
+    <li><strong>Postmortem without blame</strong> — systems fail, not people; focus on process improvements</li>
+    <li><strong>Track MTTR/MTTD</strong> — Mean Time To Detect, Mean Time To Resolve — improve both over time</li>
+  </ul>
+
+  <h3>Interview Questions — SRE</h3>
+  <div class="qa-block">
+    <div class="question">What is an error budget and how does it influence engineering decisions?</div>
+    <div class="answer">Error budget = 1 minus your SLO, expressed as allowed downtime/failure rate per period. A 99.9% SLO gives 43.8 minutes/month of allowed downtime. When budget is healthy, teams ship features aggressively. When budget is nearly exhausted, the team shifts focus to reliability work. When exhausted, feature releases pause until reliability improves. It converts the reliability vs velocity tension into an objective, data-driven conversation instead of a political one. Example: team wants to deploy a risky migration — check remaining budget first. If only 5 minutes left and migration carries 15-minute risk, delay it.</div>
+  </div>
+  <div class="qa-block">
+    <div class="question">How do you write a good post-mortem?</div>
+    <div class="answer">Key sections: 1) <strong>Summary:</strong> 2-3 sentences — what happened, impact, duration. 2) <strong>Timeline:</strong> Minute-by-minute from first symptom to full resolution. 3) <strong>Root cause:</strong> The "5 Whys" — keep asking why until you reach a systemic cause, not a person. 4) <strong>Contributing factors:</strong> Things that made the incident worse (poor monitoring, insufficient testing, unclear runbooks). 5) <strong>Action items:</strong> Specific, assigned, with deadlines — not vague "improve monitoring" but "add p99 latency alert to api service by 2024-01-15 — Owner: Jane". Blameless: focus on systems and processes, never name individuals as the cause.</div>
+  </div>
+  <div class="qa-block">
+    <div class="question">What is the difference between SRE and DevOps?</div>
+    <div class="answer">DevOps is a culture and set of practices (CI/CD, automation, collaboration). SRE is Google's specific implementation of DevOps principles with an engineering-first approach. Key SRE additions: quantitative reliability targets (SLOs), error budgets to balance velocity vs reliability, the 50% toil cap rule, and embedding software engineers in operations. DevOps is the philosophy; SRE is one opinionated implementation. Many companies adopt SRE practices within their DevOps culture.</div>
+  </div>
+</div>
+
+<!-- ======================== SERVERLESS / LAMBDA ======================== -->
+<div class="section" id="serverless">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(245,158,11,0.15);">⚡</div>
+    <h2>N. AWS Lambda &amp; Serverless Architecture</h2>
+    <span class="level-tag badge-blue badge">Intermediate → Advanced</span>
+  </div>
+
+  <div class="tip-box">Real-world analogy: Lambda is like a taxi — you only pay when you're actually riding (code executing), not when the car is parked waiting. No servers to manage, infinitely scalable, billed per 100ms of execution.</div>
+
+  <h3>How Lambda Works Internally</h3>
+  <div class="diagram">Invocation Flow:
+  Event Source          Lambda Service              Your Code
+  (API GW / S3 /        |                           (execution environment)
+   SQS / EventBridge)   |                           |
+        |               |                           |
+        |-- event ------>|                           |
+        |               |-- cold start (if new) --->|
+        |               |   (init: download code,   |
+        |               |    start runtime, run     |
+        |               |    init code outside      |
+        |               |    handler)               |
+        |               |-- invoke handler() ------->|
+        |               |                           |-- execute
+        |               |<-- response --------------|
+        |<-- response ---|
+
+  Warm start: execution environment reused → handler called directly (~ms)
+  Cold start: new environment spun up → adds 100ms-3s latency
+
+  Concurrency: each simultaneous request gets its own execution environment</div>
+
+  <h3>Lambda Function — Node.js Example</h3>
+  <pre><code>// handler.js — REST API backed by Lambda
+const { DynamoDBClient, PutItemCommand, GetItemCommand } = require('@aws-sdk/client-dynamodb');
+const { marshall, unmarshall } = require('@aws-sdk/util-dynamodb');
+
+const client = new DynamoDBClient({ region: process.env.AWS_REGION });
+const TABLE = process.env.TABLE_NAME;
+
+// Initialized OUTSIDE handler — reused across warm invocations
+const validateUser = (body) => {
+  if (!body.name || !body.email) throw new Error('name and email required');
+};
+
+exports.handler = async (event) => {
+  const method  = event.httpMethod;
+  const path    = event.path;
+  const headers = {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*'
+  };
+
+  try {
+    if (method === 'POST' && path === '/users') {
+      const body = JSON.parse(event.body);
+      validateUser(body);
+
+      const item = {
+        userId: { S: crypto.randomUUID() },
+        name:   { S: body.name },
+        email:  { S: body.email },
+        createdAt: { S: new Date().toISOString() }
+      };
+
+      await client.send(new PutItemCommand({ TableName: TABLE, Item: item }));
+      return { statusCode: 201, headers, body: JSON.stringify(unmarshall(item)) };
+    }
+
+    if (method === 'GET' && event.pathParameters?.userId) {
+      const result = await client.send(new GetItemCommand({
+        TableName: TABLE,
+        Key: { userId: { S: event.pathParameters.userId } }
+      }));
+
+      if (!result.Item) return { statusCode: 404, headers, body: JSON.stringify({ error: 'Not found' }) };
+      return { statusCode: 200, headers, body: JSON.stringify(unmarshall(result.Item)) };
+    }
+
+    return { statusCode: 404, headers, body: JSON.stringify({ error: 'Route not found' }) };
+
+  } catch (err) {
+    console.error('Error:', err);
+    const status = err.message.includes('required') ? 400 : 500;
+    return { statusCode: status, headers, body: JSON.stringify({ error: err.message }) };
+  }
+};</code></pre>
+
+  <h3>Serverless Framework / SAM / Terraform for Lambda</h3>
+  <pre><code"># Terraform — full serverless API setup
+resource "aws_lambda_function" "api" {
+  function_name = "${var.project}-api"
+  role          = aws_iam_role.lambda.arn
+  handler       = "handler.handler"
+  runtime       = "nodejs20.x"
+  timeout       = 30
+  memory_size   = 256
+
+  filename         = data.archive_file.lambda_zip.output_path
+  source_code_hash = data.archive_file.lambda_zip.output_base64sha256
+
+  environment {
+    variables = {
+      TABLE_NAME = aws_dynamodb_table.users.name
+      NODE_ENV   = var.environment
+    }
+  }
+
+  # Enable X-Ray tracing
+  tracing_config { mode = "Active" }
+
+  # VPC config (if Lambda needs to access RDS in private subnet)
+  # vpc_config {
+  #   subnet_ids         = module.vpc.private_subnet_ids
+  #   security_group_ids = [aws_security_group.lambda.id]
+  # }
+
+  dead_letter_config {
+    target_arn = aws_sqs_queue.lambda_dlq.arn
+  }
+}
+
+data "archive_file" "lambda_zip" {
+  type        = "zip"
+  source_dir  = "${path.module}/../src"
+  output_path = "${path.module}/lambda.zip"
+}
+
+# API Gateway — HTTP API (cheaper + faster than REST API)
+resource "aws_apigatewayv2_api" "main" {
+  name          = "${var.project}-api"
+  protocol_type = "HTTP"
+
+  cors_configuration {
+    allow_origins = ["https://yourdomain.com"]
+    allow_methods = ["GET", "POST", "PUT", "DELETE"]
+    allow_headers = ["Content-Type", "Authorization"]
+  }
+}
+
+resource "aws_apigatewayv2_stage" "prod" {
+  api_id      = aws_apigatewayv2_api.main.id
+  name        = "prod"
+  auto_deploy = true
+
+  access_log_settings {
+    destination_arn = aws_cloudwatch_log_group.api_gw.arn
+  }
+}
+
+resource "aws_apigatewayv2_integration" "lambda" {
+  api_id             = aws_apigatewayv2_api.main.id
+  integration_type   = "AWS_PROXY"
+  integration_uri    = aws_lambda_function.api.invoke_arn
+  payload_format_version = "2.0"
+}
+
+resource "aws_apigatewayv2_route" "users" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "ANY /users/{proxy+}"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+# DynamoDB — on-demand (no capacity planning)
+resource "aws_dynamodb_table" "users" {
+  name         = "${var.project}-users"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "userId"
+
+  attribute { name = "userId"; type = "S" }
+
+  point_in_time_recovery { enabled = true }
+  server_side_encryption  { enabled = true }
+
+  ttl { attribute_name = "expiresAt"; enabled = true }
+}
+
+# Lambda IAM role — least privilege
+resource "aws_iam_role" "lambda" {
+  name = "${var.project}-lambda-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
+      Principal = { Service = "lambda.amazonaws.com" }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "lambda" {
+  role   = aws_iam_role.lambda.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:DeleteItem", "dynamodb:Query"]
+        Resource = aws_dynamodb_table.users.arn
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["xray:PutTraceSegments", "xray:PutTelemetryRecords"]
+        Resource = "*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
+        Resource = "arn:aws:logs:*:*:*"
+      }
+    ]
+  })
+}</code></pre>
+
+  <h3>Lambda Event Sources</h3>
+  <div class="table-wrapper">
+  <table>
+    <tr><th>Event Source</th><th>Use Case</th><th>Trigger Type</th></tr>
+    <tr><td>API Gateway (HTTP/REST)</td><td>REST APIs, webhooks</td><td>Synchronous</td></tr>
+    <tr><td>S3</td><td>Image resize, ETL on upload</td><td>Async</td></tr>
+    <tr><td>DynamoDB Streams</td><td>React to DB changes, CDC</td><td>Poll-based</td></tr>
+    <tr><td>SQS</td><td>Queue processing, decoupling</td><td>Poll-based (batch)</td></tr>
+    <tr><td>SNS</td><td>Fan-out notifications</td><td>Async</td></tr>
+    <tr><td>EventBridge</td><td>Scheduled tasks (cron), event-driven</td><td>Async</td></tr>
+    <tr><td>Kinesis</td><td>Real-time stream processing</td><td>Poll-based</td></tr>
+    <tr><td>CloudFront</td><td>Edge functions (Lambda@Edge)</td><td>Synchronous</td></tr>
+    <tr><td>Cognito</td><td>Auth hooks (pre/post sign-up)</td><td>Synchronous</td></tr>
+  </table>
+  </div>
+
+  <h3>Cold Start Optimization</h3>
+  <pre><code"># Strategies to minimize cold starts:
+
+# 1. Provisioned Concurrency — keep N environments always warm
+resource "aws_lambda_provisioned_concurrency_config" "api" {
+  function_name                  = aws_lambda_function.api.function_name
+  qualifier                      = aws_lambda_alias.prod.name
+  provisioned_concurrent_executions = 5   # always 5 warm instances
+}
+
+# 2. Keep functions small — less code = faster init
+# Use Lambda layers for shared dependencies:
+resource "aws_lambda_layer_version" "node_modules" {
+  layer_name          = "node-dependencies"
+  filename            = "layer.zip"
+  compatible_runtimes = ["nodejs20.x"]
+}
+
+# 3. Use arm64 (Graviton) — 20% cheaper + often faster init
+resource "aws_lambda_function" "api" {
+  architectures = ["arm64"]
+  # ...
+}
+
+# 4. Avoid VPC if possible — VPC cold starts add 500ms-10s
+# If VPC is needed, use Hyperplane ENI (automatic in recent Lambda)
+
+# 5. Initialize SDK clients OUTSIDE handler
+# WRONG:
+exports.handler = async (event) => {
+  const client = new DynamoDBClient();  // created every invocation
+};
+# RIGHT:
+const client = new DynamoDBClient();   // created once, reused
+exports.handler = async (event) => { /* use client */ };</code></pre>
+
+  <h3>Interview Questions — Serverless</h3>
+  <div class="qa-block">
+    <div class="question">What is a Lambda cold start and how do you mitigate it?</div>
+    <div class="answer">A cold start occurs when Lambda creates a new execution environment to handle an invocation — downloading code, initializing the runtime, and running init code outside the handler. Adds 100ms–3s latency. Mitigations: 1) Provisioned Concurrency — keeps N environments pre-warmed (cost: you pay for idle time). 2) Keep function package size small — use layers, bundle only what's needed. 3) Choose arm64 — Graviton initializes faster. 4) Use SnapStart (Java) — snapshots initialized environment. 5) Move heavy initialization outside handler (SDK clients, DB connections). 6) Avoid VPC if not needed. Accept cold starts for async workloads; mitigate for latency-sensitive user-facing APIs.</div>
+  </div>
+  <div class="qa-block">
+    <div class="question">When would you choose Lambda over ECS/EKS?</div>
+    <div class="answer">Choose Lambda when: short-lived tasks (&lt;15 min), event-driven (S3 trigger, SQS consumer), infrequent/bursty traffic (pay only for execution), no state needed between invocations, rapid scaling to thousands of concurrent requests. Choose ECS/EKS when: long-running processes, persistent connections (WebSockets), complex microservices with sidecar patterns, need more control over runtime, container images already exist, latency-sensitive (no cold starts), need &gt;10GB memory or &gt;6 vCPU.</div>
+  </div>
+</div>
+
+<!-- ======================== ECS / FARGATE ======================== -->
+<div class="section" id="ecs">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(249,115,22,0.15);">🚢</div>
+    <h2>O. AWS ECS &amp; Fargate — Managed Containers</h2>
+    <span class="level-tag badge-blue badge">Intermediate → Advanced</span>
+  </div>
+
+  <div class="tip-box">ECS (Elastic Container Service) is AWS's native container orchestrator. Fargate is ECS's serverless compute engine — you define the container, AWS handles the underlying EC2 instances. No node management at all.</div>
+
+  <h3>ECS vs EKS vs Lambda — When to Use What</h3>
+  <div class="table-wrapper">
+  <table>
+    <tr><th>Factor</th><th>ECS + Fargate</th><th>EKS (Kubernetes)</th><th>Lambda</th></tr>
+    <tr><td>Learning curve</td><td>Low — AWS-native</td><td>High — K8s complexity</td><td>Very low</td></tr>
+    <tr><td>AWS integration</td><td>Native (IAM, ALB, CloudWatch)</td><td>Good (IRSA, ALB controller)</td><td>Native</td></tr>
+    <tr><td>Multi-cloud</td><td>No</td><td>Yes (K8s is standard)</td><td>No</td></tr>
+    <tr><td>Node management</td><td>None (Fargate)</td><td>Required (unless Fargate mode)</td><td>None</td></tr>
+    <tr><td>Max task duration</td><td>Unlimited</td><td>Unlimited</td><td>15 minutes</td></tr>
+    <tr><td>Cost (idle)</td><td>Pay per task vCPU+memory</td><td>$0.10/hr cluster + nodes</td><td>Zero</td></tr>
+    <tr><td>Best for</td><td>AWS-only shops, simpler apps</td><td>Complex microservices, multi-cloud</td><td>Event-driven, short tasks</td></tr>
+  </table>
+  </div>
+
+  <h3>ECS Core Concepts</h3>
+  <div class="diagram">ECS Concepts:
+  Cluster  → logical group of tasks/services (EC2 or Fargate compute)
+  Task Definition → blueprint (like a Dockerfile + docker-compose combined)
+             specifies: image, CPU, memory, env vars, volumes, IAM role
+  Task     → running instance of a task definition (like a pod)
+  Service  → keeps N tasks running, integrates with ALB, handles rolling updates
+  Container → one or more containers per task (like a K8s pod)</div>
+
+  <h3>Task Definition — Complete Example</h3>
+  <pre><code"># task-definition.json
+{
+  "family": "myapp-api",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::123456789:role/ecsTaskExecutionRole",
+  "taskRoleArn":      "arn:aws:iam::123456789:role/myapp-task-role",
+  "containerDefinitions": [
+    {
+      "name": "api",
+      "image": "ghcr.io/myorg/api:1.5.0",
+      "portMappings": [
+        { "containerPort": 3000, "protocol": "tcp" }
+      ],
+      "environment": [
+        { "name": "NODE_ENV", "value": "production" }
+      ],
+      "secrets": [
+        {
+          "name": "DB_PASSWORD",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:123456789:secret:prod/db-password"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/myapp-api",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "healthCheck": {
+        "command": ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 60
+      },
+      "readonlyRootFilesystem": true,
+      "user": "1000",
+      "essential": true
+    }
+  ]
+}</code></pre>
+
+  <h3>ECS Service + ALB with Terraform</h3>
+  <pre><code"># ECS Cluster
+resource "aws_ecs_cluster" "main" {
+  name = "${var.project}-${var.environment}"
+
+  setting {
+    name  = "containerInsights"
+    value = "enabled"   # CloudWatch Container Insights metrics
+  }
+}
+
+resource "aws_ecs_cluster_capacity_providers" "main" {
+  cluster_name       = aws_ecs_cluster.main.name
+  capacity_providers = ["FARGATE", "FARGATE_SPOT"]
+
+  default_capacity_provider_strategy {
+    base              = 1
+    weight            = 40
+    capacity_provider = "FARGATE"        # 40% on-demand
+  }
+  default_capacity_provider_strategy {
+    weight            = 60
+    capacity_provider = "FARGATE_SPOT"   # 60% Spot (70% cheaper)
+  }
+}
+
+# Task Definition (from JSON file)
+resource "aws_ecs_task_definition" "api" {
+  family                   = "${var.project}-api"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = 512
+  memory                   = 1024
+  execution_role_arn       = aws_iam_role.ecs_execution.arn
+  task_role_arn            = aws_iam_role.ecs_task.arn
+  container_definitions    = templatefile("${path.module}/task-definition.json.tpl", {
+    image      = "${var.ecr_url}/api:${var.image_tag}"
+    db_secret  = aws_secretsmanager_secret.db.arn
+    log_group  = aws_cloudwatch_log_group.ecs.name
+    region     = var.aws_region
+  })
+}
+
+# ECS Service
+resource "aws_ecs_service" "api" {
+  name                               = "${var.project}-api"
+  cluster                            = aws_ecs_cluster.main.id
+  task_definition                    = aws_ecs_task_definition.api.arn
+  desired_count                      = var.desired_count
+  health_check_grace_period_seconds  = 60
+
+  capacity_provider_strategy {
+    capacity_provider = "FARGATE"
+    weight            = 40
+    base              = 1
+  }
+  capacity_provider_strategy {
+    capacity_provider = "FARGATE_SPOT"
+    weight            = 60
+  }
+
+  network_configuration {
+    subnets          = module.vpc.private_subnet_ids
+    security_groups  = [aws_security_group.ecs_tasks.id]
+    assign_public_ip = false
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.api.arn
+    container_name   = "api"
+    container_port   = 3000
+  }
+
+  deployment_circuit_breaker {
+    enable   = true
+    rollback = true    # auto-rollback on failed deploy
+  }
+
+  deployment_controller { type = "ECS" }   # or "CODE_DEPLOY" for blue-green
+}
+
+# Auto Scaling
+resource "aws_appautoscaling_target" "ecs" {
+  max_capacity       = 20
+  min_capacity       = 2
+  resource_id        = "service/${aws_ecs_cluster.main.name}/${aws_ecs_service.api.name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+}
+
+resource "aws_appautoscaling_policy" "cpu" {
+  name               = "${var.project}-cpu-scaling"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.ecs.resource_id
+  scalable_dimension = aws_appautoscaling_target.ecs.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.ecs.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+    target_value       = 60.0
+    scale_in_cooldown  = 300
+    scale_out_cooldown = 60
+  }
+}</code></pre>
+
+  <h3>ECR — Elastic Container Registry</h3>
+  <pre><code"># Create ECR repository
+aws ecr create-repository \
+  --repository-name myapp/api \
+  --image-scanning-configuration scanOnPush=true \
+  --encryption-configuration encryptionType=AES256
+
+# Login and push
+aws ecr get-login-password --region us-east-1 | \
+  docker login --username AWS --password-stdin \
+  123456789.dkr.ecr.us-east-1.amazonaws.com
+
+docker tag myapp/api:latest \
+  123456789.dkr.ecr.us-east-1.amazonaws.com/myapp/api:latest
+
+docker push 123456789.dkr.ecr.us-east-1.amazonaws.com/myapp/api:latest
+
+# ECR lifecycle policy — keep only last 10 images
+aws ecr put-lifecycle-policy \
+  --repository-name myapp/api \
+  --lifecycle-policy-text '{
+    "rules": [{
+      "rulePriority": 1,
+      "description": "Keep last 10 images",
+      "selection": {
+        "tagStatus": "any",
+        "countType": "imageCountMoreThan",
+        "countNumber": 10
+      },
+      "action": { "type": "expire" }
+    }]
+  }'</code></pre>
+
+  <h3>Interview Questions — ECS</h3>
+  <div class="qa-block">
+    <div class="question">An ECS Fargate task keeps failing to start. How do you debug it?</div>
+    <div class="answer">1) Check ECS service events: <code>aws ecs describe-services --cluster myapp --services api</code> — look at Events array. 2) Check stopped task details: <code>aws ecs describe-tasks --cluster myapp --tasks &lt;task-arn&gt;</code> — stoppedReason field. 3) Common causes: image pull failure (ECR permissions, wrong tag), health check failing (app not starting in time — increase startPeriod), secrets access failure (task role missing Secrets Manager permission), out of memory (increase memory in task definition), subnet/SG misconfiguration (task can't reach internet for image pull). 4) Check CloudWatch Logs: <code>/ecs/myapp-api</code> log group for container stdout/stderr.</div>
+  </div>
+</div>
+
+<!-- ======================== KUBERNETES ADVANCED ======================== -->
+<div class="section" id="k8s-advanced">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(124,58,237,0.15);">☸️</div>
+    <h2>P. Kubernetes Advanced — StatefulSets, Storage, Scheduling</h2>
+    <span class="level-tag badge-purple badge">Advanced</span>
+  </div>
+
+  <h3>StatefulSets — For Stateful Applications</h3>
+  <pre><code"># PostgreSQL StatefulSet
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: production
+spec:
+  serviceName: postgres-headless   # required — governs pod DNS
+  replicas: 3
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:16-alpine
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: appdb
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: password
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        resources:
+          requests: { memory: "512Mi", cpu: "250m" }
+          limits:   { memory: "2Gi",   cpu: "1000m" }
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+        readinessProbe:
+          exec:
+            command: ["pg_isready", "-U", "postgres"]
+          initialDelaySeconds: 15
+          periodSeconds: 5
+  volumeClaimTemplates:   # creates PVC per pod: postgres-data-postgres-0, -1, -2
+  - metadata:
+      name: postgres-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: gp3
+      resources:
+        requests:
+          storage: 100Gi
+---
+# Headless Service — stable DNS: postgres-0.postgres-headless.production.svc.cluster.local
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-headless
+  namespace: production
+spec:
+  clusterIP: None     # headless — no virtual IP, DNS returns pod IPs directly
+  selector:
+    app: postgres
+  ports:
+  - port: 5432
+---
+# Regular Service — for app to connect (routes to primary)
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: production
+spec:
+  selector:
+    app: postgres
+  ports:
+  - port: 5432</code></pre>
+
+  <h3>DaemonSets — One Pod Per Node</h3>
+  <pre><code"># Use cases: log collectors, monitoring agents, network plugins, security agents
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: filebeat
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: filebeat
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: filebeat
+    spec:
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane   # run on master nodes too
+        effect: NoSchedule
+      containers:
+      - name: filebeat
+        image: docker.elastic.co/beats/filebeat:8.11.0
+        resources:
+          requests: { memory: "100Mi", cpu: "100m" }
+          limits:   { memory: "200Mi", cpu: "200m" }
+        volumeMounts:
+        - name: varlog
+          mountPath: /var/log
+          readOnly: true
+        - name: varlibdockercontainers
+          mountPath: /var/lib/docker/containers
+          readOnly: true
+      volumes:
+      - name: varlog
+        hostPath:
+          path: /var/log
+      - name: varlibdockercontainers
+        hostPath:
+          path: /var/lib/docker/containers</code></pre>
+
+  <h3>Jobs &amp; CronJobs</h3>
+  <pre><code"># One-time Job — database migration
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-migrate-v1-5
+  namespace: production
+spec:
+  backoffLimit: 3
+  activeDeadlineSeconds: 300   # fail if not done in 5 min
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: migrate
+        image: myorg/api:1.5.0
+        command: ["npm", "run", "migrate"]
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: db-secret
+              key: url
+
+---
+# CronJob — nightly data export at 2AM UTC
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: nightly-export
+  namespace: production
+spec:
+  schedule: "0 2 * * *"
+  concurrencyPolicy: Forbid       # don't run if previous still running
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  startingDeadlineSeconds: 600    # give up if 10 min late
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: exporter
+            image: myorg/exporter:latest
+            resources:
+              requests: { memory: "256Mi", cpu: "100m" }</code></pre>
+
+  <h3>Persistent Volumes — Storage Deep Dive</h3>
+  <pre><code"># StorageClass — defines the type of storage
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: gp3
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+provisioner: ebs.csi.aws.com
+parameters:
+  type: gp3
+  iopsPerGB: "3000"
+  throughput: "125"
+  encrypted: "true"
+reclaimPolicy: Retain          # don't delete PV when PVC deleted
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer  # provision in same AZ as pod
+
+---
+# PersistentVolumeClaim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: app-data
+  namespace: production
+spec:
+  accessModes: [ReadWriteOnce]   # RWO: one node; RWX: many nodes (EFS)
+  storageClassName: gp3
+  resources:
+    requests:
+      storage: 50Gi
+
+---
+# Pod using PVC
+spec:
+  containers:
+  - name: app
+    volumeMounts:
+    - name: data
+      mountPath: /data
+  volumes:
+  - name: data
+    persistentVolumeClaim:
+      claimName: app-data</code></pre>
+
+  <h3>Advanced Scheduling — Taints, Tolerations &amp; Affinity</h3>
+  <pre><code"># Taint a node (mark it as special — no pods unless they tolerate)
+kubectl taint nodes gpu-node-1 gpu=true:NoSchedule
+kubectl taint nodes spot-node-1 spot=true:PreferNoSchedule
+
+# Toleration in Pod spec — "I can run on gpu nodes"
+spec:
+  tolerations:
+  - key: "gpu"
+    operator: "Equal"
+    value: "true"
+    effect: "NoSchedule"
+
+# Node Affinity — schedule on specific nodes
+spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:   # hard rule
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: node.kubernetes.io/instance-type
+            operator: In
+            values: ["m6i.xlarge", "m6i.2xlarge"]
+      preferredDuringSchedulingIgnoredDuringExecution:  # soft rule
+      - weight: 80
+        preference:
+          matchExpressions:
+          - key: topology.kubernetes.io/zone
+            operator: In
+            values: ["us-east-1a"]
+
+# Pod Anti-Affinity — spread across nodes/AZs
+spec:
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchLabels:
+            app: api
+        topologyKey: kubernetes.io/hostname   # one pod per node</code></pre>
+
+  <h3>Resource Quotas &amp; LimitRange</h3>
+  <pre><code"># ResourceQuota — limit total resources in namespace
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: production-quota
+  namespace: production
+spec:
+  hard:
+    requests.cpu: "20"
+    requests.memory: 40Gi
+    limits.cpu: "40"
+    limits.memory: 80Gi
+    pods: "100"
+    services: "20"
+    persistentvolumeclaims: "20"
+
+---
+# LimitRange — default + max per container
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: container-limits
+  namespace: production
+spec:
+  limits:
+  - type: Container
+    default:          # applied if no limits specified
+      cpu: 200m
+      memory: 256Mi
+    defaultRequest:
+      cpu: 100m
+      memory: 128Mi
+    max:             # hard ceiling
+      cpu: "4"
+      memory: 8Gi</code></pre>
+
+  <h3>Interview Questions — K8s Advanced</h3>
+  <div class="qa-block">
+    <div class="question">When would you use a StatefulSet vs a Deployment?</div>
+    <div class="answer">Use StatefulSet when: 1) Each pod needs stable, unique network identity (postgres-0, postgres-1 DNS names). 2) Each pod needs its own persistent storage (volumeClaimTemplates creates a PVC per pod — deleting pod-0 doesn't delete its PVC). 3) Ordered startup/shutdown matters (pod-1 only starts after pod-0 is Ready). 4) Examples: PostgreSQL, MySQL, Cassandra, Kafka, ZooKeeper, Redis cluster. Use Deployment when: pods are interchangeable, storage is shared or ephemeral, order doesn't matter. Key gotcha: StatefulSet scale-down removes the highest-numbered pod first (pod-2 before pod-1 before pod-0) — important for Kafka partition leaders.</div>
+  </div>
+  <div class="qa-block">
+    <div class="question">Explain PersistentVolume, PersistentVolumeClaim, and StorageClass. How do they relate?</div>
+    <div class="answer"><strong>StorageClass:</strong> Defines the type of storage and provisioner (e.g., AWS EBS gp3 with EBS CSI driver). Acts as a template. <br><strong>PersistentVolume (PV):</strong> Actual storage resource in the cluster — either manually created by admin (static provisioning) or automatically created by the provisioner when a PVC is made (dynamic provisioning). <br><strong>PersistentVolumeClaim (PVC):</strong> Pod's request for storage — "I need 50Gi ReadWriteOnce". Kubernetes binds it to a matching PV. The pod uses the PVC; it doesn't care about the underlying storage type. This abstraction means you can switch from local SSD to EBS without changing pod specs.</div>
+  </div>
+</div>
+
+<!-- ======================== SERVICE MESH / ISTIO ======================== -->
+<div class="section" id="istio">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(79,142,247,0.15);">🕸️</div>
+    <h2>Q. Service Mesh — Istio</h2>
+    <span class="level-tag badge-purple badge">Senior Level</span>
+  </div>
+
+  <div class="tip-box">Real-world analogy: Istio is like a telecommunications network's management plane — all calls (requests) between services go through it, giving you observability, traffic control, and security without changing any application code.</div>
+
+  <h3>What Istio Adds to Kubernetes</h3>
+  <div class="table-wrapper">
+  <table>
+    <tr><th>Feature</th><th>Without Istio</th><th>With Istio</th></tr>
+    <tr><td>mTLS between services</td><td>Manual cert management in each service</td><td>Automatic — Envoy sidecars handle it</td></tr>
+    <tr><td>Traffic splitting</td><td>Custom code or Ingress annotations</td><td>VirtualService with weight: 90/10</td></tr>
+    <tr><td>Retries &amp; timeouts</td><td>Code in every service</td><td>VirtualService policy — no code change</td></tr>
+    <tr><td>Observability</td><td>Each service instruments itself</td><td>Automatic metrics, traces per request</td></tr>
+    <tr><td>Circuit breaking</td><td>Library per service (Hystrix)</td><td>DestinationRule outlierDetection</td></tr>
+  </table>
+  </div>
+
+  <h3>Istio Architecture</h3>
+  <div class="diagram">Data Plane: Envoy proxies (sidecars) auto-injected into every pod
+  Control Plane: Istiod (Pilot + Citadel + Galley merged)
+
+  [App Container] + [Envoy Sidecar] ← all traffic goes through Envoy
+         ↕
+  [Istiod] — pushes config (routes, certs, policies) to all Envoys
+         ↕
+  [App Container] + [Envoy Sidecar]
+
+  Request flow: Pod-A Envoy → (mTLS) → Pod-B Envoy → Pod-B App</div>
+
+  <h3>Canary Deployment with VirtualService</h3>
+  <pre><code"># Deploy v2 alongside v1
+kubectl set image deployment/api api=myorg/api:v2 --record=false
+# But don't route traffic to it yet — use Istio to control traffic
+
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: api-vs
+  namespace: production
+spec:
+  hosts:
+  - api
+  http:
+  - match:
+    - headers:
+        x-canary:
+          exact: "true"
+    route:
+    - destination:
+        host: api
+        subset: v2
+  - route:                    # default — 95% v1, 5% v2
+    - destination:
+        host: api
+        subset: v1
+      weight: 95
+    - destination:
+        host: api
+        subset: v2
+      weight: 5
+    retries:
+      attempts: 3
+      perTryTimeout: 5s
+    timeout: 15s
+
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: api-dr
+  namespace: production
+spec:
+  host: api
+  trafficPolicy:
+    connectionPool:
+      http:
+        h2UpgradePolicy: UPGRADE
+    outlierDetection:         # circuit breaker
+      consecutiveErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+  - name: v2
+    labels:
+      version: v2</code></pre>
+
+  <h3>Mutual TLS (mTLS)</h3>
+  <pre><code"># Enable strict mTLS for entire namespace
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: production
+spec:
+  mtls:
+    mode: STRICT   # all service-to-service traffic must use mTLS
+
+---
+# AuthorizationPolicy — who can call what
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: api-authz
+  namespace: production
+spec:
+  selector:
+    matchLabels:
+      app: api
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/production/sa/frontend-sa"]
+  - to:
+    - operation:
+        methods: ["GET", "POST"]
+        paths: ["/api/*"]</code></pre>
+
+  <h3>Interview Questions — Service Mesh</h3>
+  <div class="qa-block">
+    <div class="question">What problems does a service mesh solve that you can't solve with K8s alone?</div>
+    <div class="answer">Kubernetes handles service discovery and load balancing but gives you no observability into inter-service traffic, no traffic control beyond basic LB, no security between services, and no circuit breaking. Service mesh (Istio) adds: 1) mTLS encryption + authentication between every pair of services — without any code change. 2) Fine-grained traffic control (canary %, header-based routing, retries, timeouts) at the infrastructure level. 3) Automatic distributed tracing (every request tagged with trace ID, propagated via headers). 4) Per-service request metrics (Prometheus) automatically. 5) Circuit breaking and outlier detection. The key: all this is configuration (CRDs), not application code change.</div>
+  </div>
+</div>
+
+<!-- ======================== MESSAGE QUEUES ======================== -->
+<div class="section" id="messaging">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(16,185,129,0.15);">📨</div>
+    <h2>R. Message Queues — Kafka, SQS, RabbitMQ</h2>
+    <span class="level-tag badge-blue badge">Intermediate → Advanced</span>
+  </div>
+
+  <div class="tip-box">Real-world analogy: Message queues are like a post office — the sender drops a letter (message) and moves on. The recipient picks it up when ready. Neither needs to be online at the same time — fully decoupled.</div>
+
+  <h3>When to Use Message Queues</h3>
+  <ul>
+    <li><strong>Decoupling:</strong> Order service publishes "order.created" — inventory, email, billing each consume independently</li>
+    <li><strong>Load leveling:</strong> Spike of 10,000 requests → queue absorbs burst → workers process at their own pace</li>
+    <li><strong>Async processing:</strong> User uploads video → API returns immediately → worker processes video in background</li>
+    <li><strong>Reliability:</strong> If consumer crashes mid-processing, message stays in queue and gets retried</li>
+    <li><strong>Fan-out:</strong> One event → multiple consumers (SNS → SQS queues)</li>
+  </ul>
+
+  <h3>Kafka vs SQS vs RabbitMQ</h3>
+  <div class="table-wrapper">
+  <table>
+    <tr><th>Feature</th><th>Apache Kafka</th><th>AWS SQS</th><th>RabbitMQ</th></tr>
+    <tr><td>Type</td><td>Log-based distributed streaming</td><td>Managed queue (cloud-native)</td><td>Message broker (AMQP)</td></tr>
+    <tr><td>Message retention</td><td>Days/weeks (configurable)</td><td>Up to 14 days</td><td>Until consumed</td></tr>
+    <tr><td>Replay</td><td>Yes — consumers can re-read old messages</td><td>No</td><td>No</td></tr>
+    <tr><td>Ordering</td><td>Per-partition ordering</td><td>FIFO queue option</td><td>Per-queue ordering</td></tr>
+    <tr><td>Throughput</td><td>Millions/sec</td><td>Thousands/sec</td><td>Tens of thousands/sec</td></tr>
+    <tr><td>Setup</td><td>Complex (brokers, ZooKeeper/KRaft)</td><td>Zero (fully managed)</td><td>Moderate</td></tr>
+    <tr><td>Best for</td><td>Event sourcing, analytics pipelines, audit logs</td><td>Simple task queues, AWS-native</td><td>Complex routing, multiple exchanges</td></tr>
+  </table>
+  </div>
+
+  <h3>AWS SQS — Complete Example</h3>
+  <pre><code"># Create SQS queue with DLQ (Dead Letter Queue)
+# Terraform
+resource "aws_sqs_queue" "main" {
+  name                       = "${var.project}-orders"
+  visibility_timeout_seconds = 300   # how long consumer has to process
+  message_retention_seconds  = 86400 # 1 day
+  receive_wait_time_seconds  = 20    # long polling — cheaper
+  max_message_size           = 262144
+
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.dlq.arn
+    maxReceiveCount     = 3           # move to DLQ after 3 failed attempts
+  })
+
+  tags = { Name = "${var.project}-orders" }
+}
+
+resource "aws_sqs_queue" "dlq" {
+  name                      = "${var.project}-orders-dlq"
+  message_retention_seconds = 1209600   # 14 days — time to investigate
+}
+
+# Lambda consumer — triggered by SQS
+resource "aws_lambda_event_source_mapping" "sqs" {
+  event_source_arn = aws_sqs_queue.main.arn
+  function_name    = aws_lambda_function.order_processor.arn
+  batch_size       = 10
+  function_response_types = ["ReportBatchItemFailures"]  # partial batch failure
+}</code></pre>
+
+  <pre><code">// SQS consumer Lambda handler
+exports.handler = async (event) => {
+  const failures = [];
+
+  await Promise.all(event.Records.map(async (record) => {
+    try {
+      const body = JSON.parse(record.body);
+      await processOrder(body);
+      console.log('Processed order:', body.orderId);
+    } catch (err) {
+      console.error('Failed to process:', record.messageId, err);
+      failures.push({ itemIdentifier: record.messageId }); // partial failure
+    }
+  }));
+
+  // Only failed messages go back to queue; successful ones are deleted
+  return { batchItemFailures: failures };
+};</code></pre>
+
+  <h3>Kafka — Key Concepts &amp; Docker Setup</h3>
+  <pre><code"># docker-compose.yml — Kafka with KRaft (no ZooKeeper)
+services:
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    hostname: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk   # random base64 UUID
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+      KAFKA_NUM_PARTITIONS: 3
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+
+volumes:
+  kafka_data:</code></pre>
+
+  <pre><code"># Kafka CLI operations
+# Create topic (3 partitions, replication factor 3 for production)
+kafka-topics.sh --bootstrap-server localhost:9092 \
+  --create --topic orders \
+  --partitions 3 \
+  --replication-factor 1
+
+# List topics
+kafka-topics.sh --bootstrap-server localhost:9092 --list
+
+# Produce messages
+kafka-console-producer.sh --bootstrap-server localhost:9092 \
+  --topic orders --property key.separator=: --property parse.key=true
+
+# Consume from beginning
+kafka-console-consumer.sh --bootstrap-server localhost:9092 \
+  --topic orders --from-beginning --group order-processor-1
+
+# Check consumer group lag (how far behind consumers are)
+kafka-consumer-groups.sh --bootstrap-server localhost:9092 \
+  --describe --group order-processor-1</code></pre>
+
+  <h3>Interview Questions — Messaging</h3>
+  <div class="qa-block">
+    <div class="question">What is a Dead Letter Queue and why is it important?</div>
+    <div class="answer">A DLQ is a separate queue where messages are moved after they fail processing N times (maxReceiveCount). It's critical for production systems because: 1) Prevents poison-pill messages (malformed, causes exceptions) from blocking the main queue forever by infinitely retrying. 2) Gives ops team visibility into failures — DLQ messages can be inspected to diagnose bugs. 3) Allows re-processing after a fix — once the bug is fixed, messages can be moved back from DLQ to main queue. 4) Prevents data loss — without DLQ, failed messages eventually expire. Set DLQ retention to 14 days (max for SQS). Alert on DLQ depth &gt; 0.</div>
+  </div>
+  <div class="qa-block">
+    <div class="question">Explain Kafka partitions and consumer groups.</div>
+    <div class="answer">A Kafka topic is split into partitions — each partition is an ordered, immutable log on a separate broker. Partitioning enables parallelism: multiple consumers can read simultaneously, one per partition. Consumer group: a group of consumers sharing a topic's partitions — each partition assigned to exactly one consumer in the group. Scale consumers by adding instances to the group (up to partition count). If consumers &gt; partitions, extra consumers idle. For ordering: messages with same key always go to same partition. Replication factor: each partition replicated across N brokers — tolerate N-1 broker failures.</div>
+  </div>
+</div>
+
+<!-- ======================== DATABASE DEVOPS ======================== -->
+<div class="section" id="database-devops">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(239,68,68,0.15);">🗄️</div>
+    <h2>S. Database DevOps — Migrations, Backup &amp; HA</h2>
+    <span class="level-tag badge-blue badge">Intermediate → Advanced</span>
+  </div>
+
+  <h3>Database Migrations — Flyway</h3>
+  <pre><code"># Flyway migration files — naming: V{version}__{description}.sql
+db/migrations/
+  V1__create_users_table.sql
+  V2__add_email_index.sql
+  V3__add_user_roles.sql
+
+# V1__create_users_table.sql
+CREATE TABLE users (
+    user_id   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name      VARCHAR(255) NOT NULL,
+    email     VARCHAR(255) NOT NULL UNIQUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+# V2__add_email_index.sql
+CREATE INDEX CONCURRENTLY idx_users_email ON users(email);
+-- CONCURRENTLY avoids table lock in PostgreSQL
+
+# Run migrations (in CI/CD pipeline before app deploy)
+flyway -url=jdbc:postgresql://localhost:5432/appdb \
+       -user=appuser \
+       -password=secret \
+       -locations=filesystem:./db/migrations \
+       migrate
+
+# Check migration status
+flyway info
+
+# Validate migrations match applied state
+flyway validate</code></pre>
+
+  <h3>Zero-Downtime Migration Pattern (Expand-Contract)</h3>
+  <div class="diagram">WRONG (causes downtime):
+  ALTER TABLE users RENAME COLUMN name TO full_name;
+  → Old app breaks immediately reading "name"
+
+CORRECT — Expand-Contract in 3 deployments:
+  Deploy 1: ADD COLUMN full_name VARCHAR(255);          (backward compatible)
+             Backfill: UPDATE users SET full_name = name;
+  Deploy 2: App reads full_name, writes BOTH name AND full_name
+  Deploy 3: DROP COLUMN name;                           (old code gone)
+             App reads/writes only full_name</div>
+
+  <h3>RDS — Production Configuration</h3>
+  <pre><code"># Terraform — RDS PostgreSQL Multi-AZ
+resource "aws_db_instance" "main" {
+  identifier     = "${var.project}-${var.environment}-db"
+  engine         = "postgres"
+  engine_version = "16.1"
+  instance_class = "db.r6g.xlarge"   # memory-optimized, Graviton
+
+  # Storage
+  allocated_storage     = 100
+  max_allocated_storage = 1000        # auto-scaling storage up to 1TB
+  storage_type          = "gp3"
+  storage_encrypted     = true
+  kms_key_id            = aws_kms_key.rds.arn
+
+  # Credentials
+  db_name  = var.db_name
+  username = var.db_username
+  manage_master_user_password = true  # AWS manages in Secrets Manager
+
+  # High Availability
+  multi_az = true                     # synchronous standby in another AZ
+
+  # Backups
+  backup_retention_period   = 30      # 30 days PITR
+  backup_window             = "03:00-04:00"
+  maintenance_window        = "sun:05:00-sun:06:00"
+  copy_tags_to_snapshot     = true
+  delete_automated_backups  = false
+
+  # Performance
+  performance_insights_enabled = true
+  performance_insights_retention_period = 7
+  monitoring_interval = 60           # Enhanced Monitoring every 60s
+  monitoring_role_arn = aws_iam_role.rds_monitoring.arn
+  enabled_cloudwatch_logs_exports = ["postgresql", "upgrade"]
+
+  # Security
+  publicly_accessible    = false
+  db_subnet_group_name   = aws_db_subnet_group.main.name
+  vpc_security_group_ids = [aws_security_group.rds.id]
+  deletion_protection    = true
+
+  # Upgrade
+  allow_major_version_upgrade = false
+  auto_minor_version_upgrade  = true
+
+  final_snapshot_identifier = "${var.project}-final-${formatdate("YYYY-MM-DD", timestamp())}"
+}
+
+# Read Replica (for reporting / read-heavy workloads)
+resource "aws_db_instance" "replica" {
+  identifier             = "${var.project}-${var.environment}-replica"
+  replicate_source_db    = aws_db_instance.main.identifier
+  instance_class         = "db.r6g.large"
+  publicly_accessible    = false
+  vpc_security_group_ids = [aws_security_group.rds.id]
+  skip_final_snapshot    = true
+  storage_encrypted      = true
+}</code></pre>
+
+  <h3>Backup &amp; Recovery</h3>
+  <pre><code"># Manual snapshot before major change
+aws rds create-db-snapshot \
+  --db-instance-identifier myapp-prod-db \
+  --db-snapshot-identifier pre-migration-$(date +%Y%m%d-%H%M)
+
+# Point-in-Time Recovery (restore to any second in retention window)
+aws rds restore-db-instance-to-point-in-time \
+  --source-db-instance-identifier myapp-prod-db \
+  --target-db-instance-identifier myapp-restored \
+  --restore-time "2024-01-15T02:30:00Z"
+
+# PostgreSQL — manual backup to S3
+pg_dump -h $DB_HOST -U $DB_USER -d $DB_NAME \
+  --format=custom --compress=9 \
+  -f /tmp/backup-$(date +%Y%m%d).dump
+
+aws s3 cp /tmp/backup-$(date +%Y%m%d).dump \
+  s3://my-backups/db/postgres/
+
+# Restore
+pg_restore -h $DB_HOST -U $DB_USER -d $DB_NAME \
+  --clean --if-exists /tmp/backup.dump</code></pre>
+
+  <h3>Interview Questions — Database DevOps</h3>
+  <div class="qa-block">
+    <div class="question">How do you run database migrations in a CI/CD pipeline without downtime?</div>
+    <div class="answer">Use the expand-contract pattern: 1) Never rename or drop columns in the same deploy as the code that uses the new schema. 2) Phase 1 (migration): add new nullable column, create new table — backward compatible with current code. 3) Phase 2 (backfill): populate new column for existing rows via background job. 4) Phase 3 (code deploy): release new app version that reads from new column. 5) Phase 4 (cleanup): drop old column in a later deploy after confirming no old code uses it. In CI: run <code>flyway migrate</code> as a step before deploying new app containers. Use transactions in migrations. Never run DDL in application startup code.</div>
+  </div>
+</div>
+
+<!-- ======================== NGINX ADVANCED ======================== -->
+<div class="section" id="nginx">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(16,185,129,0.15);">🌐</div>
+    <h2>T. Advanced Nginx Configuration</h2>
+    <span class="level-tag badge-blue badge">Intermediate → Advanced</span>
+  </div>
+
+  <h3>Production Nginx Configuration</h3>
+  <pre><code"># /etc/nginx/nginx.conf — production hardened
+user nginx;
+worker_processes auto;                    # one per CPU core
+worker_rlimit_nofile 65535;
+error_log /var/log/nginx/error.log warn;
+pid /run/nginx.pid;
+
+events {
+    worker_connections 4096;              # per worker
+    use epoll;                            # Linux best I/O model
+    multi_accept on;
+}
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+
+    # Logging
+    log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                    '$status $body_bytes_sent "$http_referer" '
+                    '"$http_user_agent" "$http_x_forwarded_for" '
+                    'rt=$request_time urt=$upstream_response_time';
+    access_log /var/log/nginx/access.log main buffer=16k flush=2s;
+
+    # Performance
+    sendfile        on;
+    tcp_nopush      on;
+    tcp_nodelay     on;
+    keepalive_timeout 65;
+    keepalive_requests 1000;
+
+    # Gzip
+    gzip on;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_min_length 1024;
+    gzip_types text/plain text/css text/xml text/javascript
+               application/json application/javascript application/xml+rss
+               image/svg+xml;
+
+    # Security
+    server_tokens off;                    # hide Nginx version
+    more_clear_headers Server;            # requires headers-more module
+
+    # Rate limiting
+    limit_req_zone $binary_remote_addr zone=api:10m rate=100r/m;
+    limit_req_zone $binary_remote_addr zone=login:10m rate=5r/m;
+    limit_conn_zone $binary_remote_addr zone=addr:10m;
+
+    # Upstream — app servers (load balancing)
+    upstream app_backend {
+        least_conn;                       # least connections LB
+        keepalive 32;                     # keep 32 persistent connections
+
+        server 10.0.11.10:3000 weight=1 max_fails=3 fail_timeout=30s;
+        server 10.0.12.10:3000 weight=1 max_fails=3 fail_timeout=30s;
+        server 10.0.11.11:3000 backup;   # only if primaries fail
+    }
+
+    include /etc/nginx/conf.d/*.conf;
+}
+
+# /etc/nginx/conf.d/app.conf
+server {
+    listen 80;
+    server_name myapp.com www.myapp.com;
+    return 301 https://$host$request_uri;   # redirect all HTTP → HTTPS
+}
+
+server {
+    listen 443 ssl http2;
+    server_name myapp.com www.myapp.com;
+
+    # SSL
+    ssl_certificate     /etc/nginx/certs/fullchain.pem;
+    ssl_certificate_key /etc/nginx/certs/privkey.pem;
+    ssl_session_cache   shared:SSL:10m;
+    ssl_session_timeout 1d;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_ciphers         ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384;
+    ssl_prefer_server_ciphers off;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+
+    # Security headers
+    add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';" always;
+
+    # Root / static files
+    root /var/www/html;
+    index index.html;
+
+    # Static files — cache at browser
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff2|webp)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        access_log off;
+    }
+
+    # API — proxy to backend, rate limited
+    location /api/ {
+        limit_req zone=api burst=20 nodelay;
+        limit_conn addr 10;
+
+        proxy_pass http://app_backend;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";   # for WebSockets
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_connect_timeout 5s;
+        proxy_send_timeout    60s;
+        proxy_read_timeout    60s;
+        proxy_buffering       on;
+        proxy_buffer_size     4k;
+        proxy_buffers         8 4k;
+
+        # Upstream health — if backend returns 502/503/504, try next
+        proxy_next_upstream error timeout http_502 http_503 http_504;
+        proxy_next_upstream_tries 2;
+    }
+
+    # Login endpoint — strict rate limit
+    location /api/auth/login {
+        limit_req zone=login burst=3 nodelay;
+        proxy_pass http://app_backend;
+    }
+
+    # Health check — no logging, no rate limit
+    location /health {
+        access_log off;
+        proxy_pass http://app_backend;
+    }
+
+    # SPA fallback — all non-file routes → index.html
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}</code></pre>
+
+  <h3>Interview Questions — Nginx</h3>
+  <div class="qa-block">
+    <div class="question">Nginx returns 502 Bad Gateway. How do you diagnose?</div>
+    <div class="answer">502 = Nginx received an invalid response from the upstream backend. Debug steps: 1) Check Nginx error log: <code>tail -50 /var/log/nginx/error.log</code> — look for "connect() failed" or "upstream timed out". 2) Verify backend is running: <code>curl -v http://localhost:3000/health</code> directly on app server. 3) Check upstream config in nginx.conf — correct IP:port? 4) Check backend logs for crash. 5) Check <code>proxy_read_timeout</code> — if app is slow to respond, increase it. 6) Check file descriptor limits: <code>ulimit -n</code> — if too low, Nginx can't open connections. 7) If all backends down: check ASG health, check DB connectivity from app.</div>
+  </div>
+</div>
+
+<!-- ======================== PYTHON / BOTO3 FOR DEVOPS ======================== -->
+<div class="section" id="python-devops">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(245,158,11,0.15);">🐍</div>
+    <h2>U. Python &amp; Scripting for DevOps</h2>
+    <span class="level-tag badge-blue badge">Intermediate</span>
+  </div>
+
+  <h3>boto3 — AWS SDK for Python</h3>
+  <pre><code">import boto3
+import json
+from datetime import datetime, timedelta, timezone
+
+# AWS clients
+ec2     = boto3.client('ec2', region_name='us-east-1')
+s3      = boto3.client('s3')
+ssm     = boto3.client('ssm')
+secrets = boto3.client('secretsmanager')
+ecs     = boto3.client('ecs')
+
+# ── EC2: Find and stop idle instances ────────────────────────────────────────
+def stop_idle_instances(cpu_threshold=5.0, hours=24):
+    """Stop EC2 instances with avg CPU < threshold for the past N hours."""
+    cw = boto3.client('cloudwatch')
+
+    instances = ec2.describe_instances(
+        Filters=[{'Name': 'instance-state-name', 'Values': ['running']},
+                 {'Name': 'tag:Environment',      'Values': ['dev']}]
+    )
+
+    to_stop = []
+    for reservation in instances['Reservations']:
+        for inst in reservation['Instances']:
+            iid = inst['InstanceId']
+            metrics = cw.get_metric_statistics(
+                Namespace   = 'AWS/EC2',
+                MetricName  = 'CPUUtilization',
+                Dimensions  = [{'Name': 'InstanceId', 'Value': iid}],
+                StartTime   = datetime.now(timezone.utc) - timedelta(hours=hours),
+                EndTime     = datetime.now(timezone.utc),
+                Period      = 3600,
+                Statistics  = ['Average']
+            )
+            if metrics['Datapoints']:
+                avg_cpu = sum(p['Average'] for p in metrics['Datapoints']) / len(metrics['Datapoints'])
+                if avg_cpu < cpu_threshold:
+                    to_stop.append(iid)
+                    print(f"  {iid}: avg CPU {avg_cpu:.1f}% → stopping")
+
+    if to_stop:
+        ec2.stop_instances(InstanceIds=to_stop)
+        print(f"Stopped {len(to_stop)} idle instances")
+
+# ── S3: Clean old backups ─────────────────────────────────────────────────────
+def cleanup_old_backups(bucket, prefix, days_to_keep=30):
+    """Delete S3 objects older than N days."""
+    paginator = s3.get_paginator('list_objects_v2')
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days_to_keep)
+    deleted = 0
+
+    for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
+        for obj in page.get('Contents', []):
+            if obj['LastModified'] < cutoff:
+                s3.delete_object(Bucket=bucket, Key=obj['Key'])
+                deleted += 1
+
+    print(f"Deleted {deleted} objects from s3://{bucket}/{prefix}")
+
+# ── Secrets Manager: rotate a secret ─────────────────────────────────────────
+def get_secret(secret_name):
+    response = secrets.get_secret_value(SecretId=secret_name)
+    if 'SecretString' in response:
+        return json.loads(response['SecretString'])
+    return response['SecretBinary']
+
+# ── ECS: force new deployment ─────────────────────────────────────────────────
+def force_ecs_deploy(cluster, service):
+    """Force ECS service to pull latest image and redeploy."""
+    response = ecs.update_service(
+        cluster             = cluster,
+        service             = service,
+        forceNewDeployment  = True
+    )
+    print(f"Forced deployment: {response['service']['serviceName']}")
+    print(f"  Status: {response['service']['status']}")
+    print(f"  Running: {response['service']['runningCount']}")
+    print(f"  Desired: {response['service']['desiredCount']}")
+
+# ── SSM Parameter Store ───────────────────────────────────────────────────────
+def get_param(name, decrypt=True):
+    return ssm.get_parameter(Name=name, WithDecryption=decrypt)['Parameter']['Value']
+
+def put_param(name, value, param_type='SecureString'):
+    ssm.put_parameter(Name=name, Value=value, Type=param_type, Overwrite=True)
+
+if __name__ == '__main__':
+    stop_idle_instances(cpu_threshold=5.0, hours=24)
+    cleanup_old_backups('my-backups', 'db/postgres/', days_to_keep=30)</code></pre>
+
+  <h3>Python: Health Check Monitor Script</h3>
+  <pre><code">import requests, smtplib, time, logging
+from email.mime.text import MIMEText
+from dataclasses import dataclass
+from typing import List
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
+
+@dataclass
+class Endpoint:
+    name: str
+    url: str
+    expected_status: int = 200
+    timeout: int = 10
+
+ENDPOINTS = [
+    Endpoint("API",      "https://api.myapp.com/health"),
+    Endpoint("Frontend", "https://myapp.com"),
+    Endpoint("Admin",    "https://admin.myapp.com/health"),
+]
+
+def check_endpoint(ep: Endpoint) -> dict:
+    try:
+        r = requests.get(ep.url, timeout=ep.timeout)
+        ok = r.status_code == ep.expected_status
+        return {"name": ep.name, "ok": ok, "status": r.status_code,
+                "latency_ms": round(r.elapsed.total_seconds() * 1000)}
+    except Exception as e:
+        return {"name": ep.name, "ok": False, "error": str(e)}
+
+def send_alert(results: List[dict]):
+    failed = [r for r in results if not r['ok']]
+    if not failed:
+        return
+    body = "\n".join(f"❌ {r['name']}: {r.get('error', f'HTTP {r[\"status\"]}')}" for r in failed)
+    msg = MIMEText(body)
+    msg['Subject'] = f"ALERT: {len(failed)} endpoint(s) down"
+    msg['From'] = "monitor@myapp.com"
+    msg['To']   = "oncall@myapp.com"
+    with smtplib.SMTP('smtp.gmail.com', 587) as s:
+        s.starttls()
+        s.login("monitor@myapp.com", "app_password")
+        s.sendmail(msg['From'], [msg['To']], msg.as_string())
+    logging.warning("Alert sent: %s", body)
+
+def monitor():
+    while True:
+        results = [check_endpoint(ep) for ep in ENDPOINTS]
+        for r in results:
+            status = "✅" if r['ok'] else "❌"
+            logging.info("%s %s %s", status, r['name'], r.get('latency_ms', r.get('error', '')))
+        send_alert(results)
+        time.sleep(60)
+
+if __name__ == '__main__':
+    monitor()</code></pre>
+
+  <h3>Interview Questions — Python for DevOps</h3>
+  <div class="qa-block">
+    <div class="question">Write a Python script to find EC2 instances not tagged with Environment and list them.</div>
+    <div class="answer"><pre><code">import boto3
+ec2 = boto3.client('ec2', region_name='us-east-1')
+response = ec2.describe_instances(
+    Filters=[{'Name': 'instance-state-name', 'Values': ['running']}]
+)
+untagged = []
+for r in response['Reservations']:
+    for inst in r['Instances']:
+        tags = {t['Key']: t['Value'] for t in inst.get('Tags', [])}
+        if 'Environment' not in tags:
+            untagged.append(inst['InstanceId'])
+print(f"Untagged instances ({len(untagged)}): {untagged}")</code></pre>This demonstrates boto3 pagination awareness (add paginator for >100 instances), filtering, and tag inspection — common interview pattern.</div>
+  </div>
+</div>
+
+<!-- ======================== OPENTELEMETRY ======================== -->
+<div class="section" id="otel">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(79,142,247,0.15);">🔭</div>
+    <h2>V. OpenTelemetry — Modern Observability</h2>
+    <span class="level-tag badge-purple badge">Advanced</span>
+  </div>
+
+  <div class="tip-box">OpenTelemetry (OTel) is the CNCF standard for collecting metrics, logs, and traces — vendor-neutral. Instrument once, send to any backend (Jaeger, Grafana Tempo, Datadog, AWS X-Ray).</div>
+
+  <h3>OTel Architecture</h3>
+  <div class="diagram">Your App (instrumented with OTel SDK)
+    │ traces/metrics/logs (OTLP protocol)
+    ▼
+  OTel Collector (sidecar or daemonset in K8s)
+    │ receives, processes, batches
+    ├─► Jaeger / Grafana Tempo (traces)
+    ├─► Prometheus (metrics via OTLP receiver)
+    └─► Elasticsearch / Loki (logs)</div>
+
+  <h3>Instrument a Node.js App</h3>
+  <pre><code">// tracing.js — must be loaded first (--require ./tracing.js)
+const { NodeSDK } = require('@opentelemetry/sdk-node');
+const { getNodeAutoInstrumentations } = require('@opentelemetry/auto-instrumentations-node');
+const { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-grpc');
+const { OTLPMetricExporter } = require('@opentelemetry/exporter-metrics-otlp-grpc');
+const { PeriodicExportingMetricReader } = require('@opentelemetry/sdk-metrics');
+const { Resource } = require('@opentelemetry/resources');
+const { SEMRESATTRS_SERVICE_NAME, SEMRESATTRS_SERVICE_VERSION } = require('@opentelemetry/semantic-conventions');
+
+const sdk = new NodeSDK({
+  resource: new Resource({
+    [SEMRESATTRS_SERVICE_NAME]:    'api-service',
+    [SEMRESATTRS_SERVICE_VERSION]: process.env.APP_VERSION || '1.0.0',
+    environment: process.env.NODE_ENV,
+  }),
+  traceExporter: new OTLPTraceExporter({
+    url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://otel-collector:4317',
+  }),
+  metricReader: new PeriodicExportingMetricReader({
+    exporter: new OTLPMetricExporter({
+      url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://otel-collector:4317',
+    }),
+    exportIntervalMillis: 15000,
+  }),
+  instrumentations: [
+    getNodeAutoInstrumentations({
+      '@opentelemetry/instrumentation-http':     { enabled: true },
+      '@opentelemetry/instrumentation-express':  { enabled: true },
+      '@opentelemetry/instrumentation-pg':       { enabled: true },
+      '@opentelemetry/instrumentation-redis':    { enabled: true },
+    }),
+  ],
+});
+sdk.start();</code></pre>
+
+  <h3>OTel Collector — K8s DaemonSet</h3>
+  <pre><code"># otel-collector-config.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-config
+  namespace: monitoring
+data:
+  config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+      prometheus:
+        config:
+          scrape_configs:
+          - job_name: 'k8s-pods'
+            kubernetes_sd_configs:
+            - role: pod
+
+    processors:
+      batch:
+        timeout: 5s
+        send_batch_size: 512
+      resource:
+        attributes:
+        - action: insert
+          key: k8s.cluster.name
+          value: myapp-prod
+      memory_limiter:
+        limit_mib: 256
+
+    exporters:
+      otlp/jaeger:
+        endpoint: jaeger-collector:4317
+        tls:
+          insecure: true
+      prometheusremotewrite:
+        endpoint: http://prometheus:9090/api/v1/write
+      logging:
+        loglevel: warn
+
+    service:
+      pipelines:
+        traces:
+          receivers:  [otlp]
+          processors: [memory_limiter, batch, resource]
+          exporters:  [otlp/jaeger]
+        metrics:
+          receivers:  [otlp, prometheus]
+          processors: [memory_limiter, batch]
+          exporters:  [prometheusremotewrite]</code></pre>
+
+  <h3>Interview Questions — OpenTelemetry</h3>
+  <div class="qa-block">
+    <div class="question">What is a trace and a span in distributed tracing?</div>
+    <div class="answer">A <strong>trace</strong> represents the complete journey of a request through your distributed system — from the initial HTTP request to the final response, across all microservices. A <strong>span</strong> is one unit of work within a trace — e.g., "API received request", "DB query executed", "cache lookup". Spans have: start time, duration, status (ok/error), attributes (HTTP method, URL, status code), and events (log-like entries). Spans link to each other via parent-child relationships — this creates the trace "tree". A trace ID is propagated via HTTP headers (W3C TraceContext: <code>traceparent</code>) between services, allowing you to reconstruct the full request path.</div>
+  </div>
+</div>
+
+<!-- ============================================================
+     NEW CONTENT PART 2: Additional Cheat Sheets + Projects 5-9
+     ============================================================ -->
+
+<!-- ==================== ADDITIONAL CHEAT SHEETS ==================== -->
+<section id="cheat-terraform" class="section">
+  <h2>Terraform Cheat Sheet</h2>
+
+  <div class="diagram-box">
+    <strong>Terraform Workflow</strong><br>
+    <code>terraform init</code> → <code>terraform plan</code> → <code>terraform apply</code> → <code>terraform destroy</code><br>
+    State: local (terraform.tfstate) | Remote (S3 + DynamoDB lock) | Terraform Cloud
+  </div>
+
+  <h3>Core Commands</h3>
+  <pre><code class="language-bash"># Initialization
+terraform init                        # Download providers & modules
+terraform init -upgrade               # Upgrade providers
+terraform init -backend-config=prod.tfbackend
+
+# Planning & Applying
+terraform plan -out=tfplan            # Save plan
+terraform apply tfplan                # Apply saved plan
+terraform apply -auto-approve         # Skip confirmation
+terraform apply -target=module.vpc    # Target specific resource
+terraform apply -var="env=prod"       # Pass variable
+
+# State management
+terraform state list                  # List resources in state
+terraform state show aws_instance.web # Show resource details
+terraform state mv aws_instance.old aws_instance.new
+terraform state rm aws_instance.temp  # Remove from state (NOT destroy)
+terraform import aws_s3_bucket.my-bucket my-bucket-name
+
+# Workspace management
+terraform workspace new staging
+terraform workspace select prod
+terraform workspace list
+terraform workspace delete staging
+
+# Debugging
+terraform fmt -recursive              # Format all .tf files
+terraform validate                    # Validate config
+terraform console                     # Interactive console
+TF_LOG=DEBUG terraform apply          # Debug logging
+terraform show tfplan                 # Show plan file human-readable
+terraform graph | dot -Tsvg > graph.svg  # Dependency graph
+
+# Destroy
+terraform destroy -target=module.rds  # Destroy specific
+terraform destroy -auto-approve</code></pre>
+
+  <h3>Variables & Outputs</h3>
+  <pre><code class="language-hcl"># variables.tf
+variable "environment" {
+  type        = string
+  description = "Deployment environment"
+  default     = "dev"
+  validation {
+    condition     = contains(["dev", "staging", "prod"], var.environment)
+    error_message = "Must be dev, staging, or prod."
+  }
+}
+
+variable "instance_count" {
+  type    = number
+  default = 2
+}
+
+variable "tags" {
+  type    = map(string)
+  default = {}
+}
+
+variable "allowed_cidrs" {
+  type    = list(string)
+  default = ["10.0.0.0/8"]
+}
+
+# outputs.tf
+output "alb_dns" {
+  value       = aws_lb.main.dns_name
+  description = "ALB DNS name"
+}
+
+output "db_endpoint" {
+  value     = aws_db_instance.main.endpoint
+  sensitive = true
+}
+
+# locals.tf
+locals {
+  name_prefix  = "${var.project}-${var.environment}"
+  common_tags  = merge(var.tags, {
+    Project     = var.project
+    Environment = var.environment
+    ManagedBy   = "Terraform"
+  })
+  is_prod = var.environment == "prod"
+  az_count = local.is_prod ? 3 : 2
+}</code></pre>
+
+  <h3>Data Sources & Dynamic Blocks</h3>
+  <pre><code class="language-hcl"># Data sources
+data "aws_ami" "amazon_linux" {
+  most_recent = true
+  owners      = ["amazon"]
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
+  }
+}
+
+data "aws_availability_zones" "available" {
+  state = "available"
+}
+
+data "aws_caller_identity" "current" {}
+data "aws_region" "current" {}
+
+# Use: data.aws_region.current.name
+
+# Dynamic blocks
+resource "aws_security_group" "web" {
+  name   = "web-sg"
+  vpc_id = aws_vpc.main.id
+
+  dynamic "ingress" {
+    for_each = var.ingress_rules
+    content {
+      from_port   = ingress.value.port
+      to_port     = ingress.value.port
+      protocol    = ingress.value.protocol
+      cidr_blocks = ingress.value.cidrs
+    }
+  }
+}
+
+# for_each with maps
+resource "aws_subnet" "private" {
+  for_each = {
+    for idx, az in data.aws_availability_zones.available.names :
+    az => {
+      az   = az
+      cidr = cidrsubnet(var.vpc_cidr, 8, idx + 10)
+    }
+  }
+  vpc_id            = aws_vpc.main.id
+  availability_zone = each.value.az
+  cidr_block        = each.value.cidr
+}
+
+# count
+resource "aws_instance" "web" {
+  count         = var.instance_count
+  ami           = data.aws_ami.amazon_linux.id
+  instance_type = var.instance_type
+  tags = {
+    Name = "${local.name_prefix}-web-${count.index + 1}"
+  }
+}</code></pre>
+
+  <h3>Terraform Backend & Remote State</h3>
+  <pre><code class="language-hcl"># backend.tf
+terraform {
+  required_version = ">= 1.5"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+  backend "s3" {
+    bucket         = "my-tfstate-bucket"
+    key            = "prod/terraform.tfstate"
+    region         = "us-east-1"
+    encrypt        = true
+    dynamodb_table = "terraform-lock"
+  }
+}
+
+# Read another module's outputs
+data "terraform_remote_state" "vpc" {
+  backend = "s3"
+  config = {
+    bucket = "my-tfstate-bucket"
+    key    = "prod/vpc/terraform.tfstate"
+    region = "us-east-1"
+  }
+}
+
+# Use: data.terraform_remote_state.vpc.outputs.vpc_id
+
+# Atlantis workflow (PR-based Terraform)
+# atlantis.yaml
+version: 3
+projects:
+  - name: prod-vpc
+    dir: environments/prod/vpc
+    workspace: default
+    autoplan:
+      when_modified: ["*.tf", "../../../modules/**/*.tf"]
+    apply_requirements: [approved, mergeable]</code></pre>
+
+  <div class="qa-block">
+    <div class="qa-question">Q: How do you handle Terraform state locking and what happens if a lock gets stuck?</div>
+    <div class="qa-answer">A: Terraform uses DynamoDB for state locking — when <code>terraform apply</code> runs, it writes a lock record to DynamoDB preventing concurrent modifications. If a lock gets stuck (e.g., interrupted apply), use <code>terraform force-unlock &lt;LOCK_ID&gt;</code> — the lock ID is shown in the error message. To prevent stuck locks, use CI/CD with proper cleanup and set DynamoDB TTL on lock items.</div>
+  </div>
+</section>
+
+<!-- ==================== ANSIBLE CHEAT SHEET ==================== -->
+<section id="cheat-ansible" class="section">
+  <h2>Ansible Cheat Sheet</h2>
+
+  <div class="diagram-box">
+    <strong>Ansible Architecture</strong><br>
+    Control Node → SSH → Managed Nodes (agentless)<br>
+    Inventory → Playbook → Roles → Tasks → Modules
+  </div>
+
+  <h3>Core Commands</h3>
+  <pre><code class="language-bash"># Ad-hoc commands
+ansible all -i inventory.ini -m ping
+ansible webservers -i inventory.ini -m shell -a "df -h"
+ansible all -m copy -a "src=file.conf dest=/etc/app/file.conf" --become
+ansible webservers -m service -a "name=nginx state=restarted" --become
+ansible-doc -l                        # List all modules
+ansible-doc copy                      # Module docs
+
+# Playbook execution
+ansible-playbook site.yml -i inventory/prod
+ansible-playbook site.yml --limit webservers
+ansible-playbook site.yml --tags "deploy,config"
+ansible-playbook site.yml --skip-tags "debug"
+ansible-playbook site.yml -e "version=2.0 env=prod"
+ansible-playbook site.yml --check     # Dry run
+ansible-playbook site.yml --diff      # Show file diffs
+ansible-playbook site.yml --step      # Step through tasks
+
+# Vault
+ansible-vault create secrets.yml
+ansible-vault encrypt vars/secrets.yml
+ansible-vault decrypt vars/secrets.yml
+ansible-vault view vars/secrets.yml
+ansible-vault edit vars/secrets.yml
+ansible-playbook site.yml --ask-vault-pass
+ansible-playbook site.yml --vault-password-file ~/.vault_pass
+
+# Inventory
+ansible-inventory -i inventory/ --list
+ansible-inventory -i inventory/ --graph</code></pre>
+
+  <h3>Inventory & Playbook Structure</h3>
+  <pre><code class="language-yaml"># inventory/prod/hosts.yml
+all:
+  children:
+    webservers:
+      hosts:
+        web1:
+          ansible_host: 10.0.1.10
+          ansible_user: ec2-user
+        web2:
+          ansible_host: 10.0.1.11
+      vars:
+        nginx_port: 80
+    dbservers:
+      hosts:
+        db1:
+          ansible_host: 10.0.2.10
+          ansible_user: ec2-user
+    bastion:
+      hosts:
+        jump:
+          ansible_host: 1.2.3.4
+
+# ansible.cfg
+[defaults]
+inventory      = inventory/prod
+remote_user    = ec2-user
+private_key_file = ~/.ssh/prod-key.pem
+host_key_checking = False
+retry_files_enabled = False
+stdout_callback = yaml
+[privilege_escalation]
+become = True
+become_method = sudo
+
+# site.yml — master playbook
+---
+- import_playbook: playbooks/base.yml
+- import_playbook: playbooks/web.yml
+- import_playbook: playbooks/db.yml
+
+# playbooks/web.yml
+---
+- name: Configure web servers
+  hosts: webservers
+  become: yes
+  vars_files:
+    - ../vars/common.yml
+    - ../vars/secrets.yml
+  pre_tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+  roles:
+    - common
+    - nginx
+    - app-deploy
+  post_tasks:
+    - name: Verify nginx is running
+      uri:
+        url: http://localhost/health
+        status_code: 200</code></pre>
+
+  <h3>Roles & Handlers</h3>
+  <pre><code class="language-yaml"># roles/nginx/tasks/main.yml
+---
+- name: Install nginx
+  package:
+    name: nginx
+    state: present
+
+- name: Deploy nginx config
+  template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
+    owner: root
+    group: root
+    mode: '0644'
+    validate: 'nginx -t -c %s'
+  notify: Reload nginx
+
+- name: Deploy site config
+  template:
+    src: site.conf.j2
+    dest: /etc/nginx/conf.d/site.conf
+  notify: Reload nginx
+
+- name: Enable and start nginx
+  service:
+    name: nginx
+    state: started
+    enabled: yes
+
+# roles/nginx/handlers/main.yml
+---
+- name: Reload nginx
+  service:
+    name: nginx
+    state: reloaded
+
+- name: Restart nginx
+  service:
+    name: nginx
+    state: restarted
+
+# roles/nginx/templates/nginx.conf.j2
+worker_processes {{ ansible_processor_vcpus }};
+events { worker_connections 1024; }
+http {
+  server_name {{ inventory_hostname }};
+  root {{ app_root_dir }};
+}</code></pre>
+
+  <h3>Loops, Conditionals & Error Handling</h3>
+  <pre><code class="language-yaml">---
+- name: Advanced task examples
+  hosts: all
+  vars:
+    packages:
+      - { name: git, state: present }
+      - { name: curl, state: present }
+      - { name: vim, state: latest }
+  tasks:
+    # Loop
+    - name: Install packages
+      package:
+        name: "{{ item.name }}"
+        state: "{{ item.state }}"
+      loop: "{{ packages }}"
+
+    # Conditional
+    - name: Start firewalld (RHEL only)
+      service:
+        name: firewalld
+        state: started
+      when: ansible_os_family == "RedHat"
+
+    # Register & use result
+    - name: Check if app is running
+      command: systemctl is-active myapp
+      register: app_status
+      changed_when: false
+      failed_when: false
+
+    - name: Start app if not running
+      service:
+        name: myapp
+        state: started
+      when: app_status.rc != 0
+
+    # Error handling
+    - name: Risky task
+      command: /opt/deploy.sh
+      ignore_errors: yes
+      register: deploy_result
+
+    - name: Rollback on failure
+      command: /opt/rollback.sh
+      when: deploy_result.failed
+
+    # Block / rescue / always
+    - block:
+        - name: Deploy app
+          command: /opt/deploy.sh
+        - name: Run smoke tests
+          uri:
+            url: http://localhost/health
+      rescue:
+        - name: Rollback
+          command: /opt/rollback.sh
+        - name: Notify on failure
+          slack:
+            token: "{{ slack_token }}"
+            msg: "Deploy failed on {{ inventory_hostname }}"
+      always:
+        - name: Send deploy event
+          command: /opt/send-event.sh</code></pre>
+
+  <div class="qa-block">
+    <div class="qa-question">Q: What is the difference between `include_tasks` and `import_tasks`?</div>
+    <div class="qa-answer">A: <code>import_tasks</code> is static — files are parsed at playbook load time, so variables in the filename must be known beforehand; tasks show up in <code>--list-tasks</code>. <code>include_tasks</code> is dynamic — evaluated at runtime, supports dynamic filenames (e.g., <code>{{ ansible_os_family }}.yml</code>), can be used inside loops. Use <code>import_*</code> for static structure and <code>include_*</code> for dynamic, conditional, or looped inclusion.</div>
+  </div>
+</section>
+
+<!-- ==================== HELM CHEAT SHEET ==================== -->
+<section id="cheat-helm" class="section">
+  <h2>Helm Cheat Sheet</h2>
+
+  <div class="diagram-box">
+    <strong>Helm Concepts</strong><br>
+    Chart (package) → Release (deployed instance) → Repository (chart registry)<br>
+    values.yaml → templates/*.yaml → Kubernetes manifests
+  </div>
+
+  <h3>Core Commands</h3>
+  <pre><code class="language-bash"># Repo management
+helm repo add stable https://charts.helm.sh/stable
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm repo update
+helm repo list
+helm search repo nginx
+helm search hub wordpress           # Search Artifact Hub
+
+# Install / Upgrade / Rollback
+helm install my-nginx bitnami/nginx -n web --create-namespace
+helm install my-app ./mychart -f values-prod.yaml
+helm install my-app ./mychart --set image.tag=v1.2.0
+helm upgrade my-app ./mychart -f values-prod.yaml --install  # install if not exists
+helm upgrade my-app ./mychart --set image.tag=v2.0.0 --atomic  # rollback on failure
+helm rollback my-app 1              # Rollback to revision 1
+helm uninstall my-app -n web
+
+# Inspection
+helm list -A                        # All namespaces
+helm status my-app
+helm history my-app                 # Release history
+helm get values my-app              # User-supplied values
+helm get values my-app --all        # All values (merged)
+helm get manifest my-app            # Rendered manifests
+
+# Development
+helm create mychart                 # Scaffold new chart
+helm lint mychart/                  # Validate chart
+helm template my-app ./mychart -f values.yaml  # Render locally
+helm template my-app ./mychart | kubectl apply --dry-run=client -f -
+helm package mychart/               # Package to .tgz
+helm dependency update mychart/     # Fetch dependencies
+
+# Plugin
+helm plugin install https://github.com/databus23/helm-diff
+helm diff upgrade my-app ./mychart -f values-prod.yaml</code></pre>
+
+  <h3>Chart Structure & Templates</h3>
+  <pre><code class="language-yaml"># Chart.yaml
+apiVersion: v2
+name: myapp
+description: My Application
+type: application
+version: 0.1.0         # Chart version
+appVersion: "1.0.0"    # App version (informational)
+dependencies:
+  - name: postgresql
+    version: "12.x.x"
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled
+
+# values.yaml
+replicaCount: 2
+image:
+  repository: myapp
+  tag: "1.0.0"
+  pullPolicy: IfNotPresent
+service:
+  type: ClusterIP
+  port: 80
+ingress:
+  enabled: false
+  host: myapp.example.com
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+postgresql:
+  enabled: true
+  auth:
+    database: myapp
+    username: myapp
+
+# templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "myapp.fullname" . }}
+  labels:
+    {{- include "myapp.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "myapp.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "myapp.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          ports:
+            - containerPort: 80
+          env:
+            - name: DB_HOST
+              value: {{ include "myapp.fullname" . }}-postgresql
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "myapp.fullname" . }}-secret
+                  key: db-password
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- if .Values.probes.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 80
+            initialDelaySeconds: 30
+          {{- end }}
+
+# templates/_helpers.tpl
+{{- define "myapp.fullname" -}}
+{{- printf "%s-%s" .Release.Name .Chart.Name | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "myapp.labels" -}}
+helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+app.kubernetes.io/name: {{ .Chart.Name }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- end }}</code></pre>
+
+  <div class="qa-block">
+    <div class="qa-question">Q: What is the difference between `helm upgrade --install` and `helm install`, and when would you use `--atomic`?</div>
+    <div class="qa-answer">A: <code>helm upgrade --install</code> installs if the release doesn't exist, upgrades otherwise — ideal for CI/CD pipelines where you don't know the state. <code>--atomic</code> sets a timeout and automatically rolls back to the previous release if the upgrade fails (pods don't become Ready), ensuring you never leave a release in a broken state. Always use <code>--atomic</code> in production deployments.</div>
+  </div>
+</section>
+
+<!-- ==================== PROJECT 5: SERVERLESS API ==================== -->
+<section id="project-serverless" class="section">
+  <h2>Project 5: Serverless REST API — Lambda + API Gateway + DynamoDB + Terraform</h2>
+
+  <div class="diagram-box">
+    <strong>Architecture</strong><br>
+    Client → API Gateway (HTTP API) → Lambda (Go/Node.js) → DynamoDB<br>
+    → CloudWatch Logs | X-Ray Tracing | Secrets Manager<br>
+    Terraform manages all resources | GitHub Actions CI/CD
+  </div>
+
+  <h3>Project Overview</h3>
+  <p>Production-ready serverless REST API with authentication, tracing, and zero-downtime deployments. Handles 10k+ req/sec at ~$0.0000002 per request.</p>
+
+  <h3>Lambda Handler (Node.js)</h3>
+  <pre><code class="language-javascript">// src/handlers/users.js
+const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
+const { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand, DeleteCommand } = require("@aws-sdk/lib-dynamodb");
+const { randomUUID } = require("crypto");
+
+const client = new DynamoDBClient({ region: process.env.AWS_REGION });
+const ddb = DynamoDBDocumentClient.from(client);
+const TABLE = process.env.USERS_TABLE;
+
+exports.handler = async (event) => {
+  const { httpMethod, pathParameters, body } = event;
+  const userId = pathParameters?.id;
+
+  try {
+    switch (httpMethod) {
+      case "GET":
+        if (userId) return getUser(userId);
+        return listUsers();
+      case "POST":
+        return createUser(JSON.parse(body));
+      case "PUT":
+        return updateUser(userId, JSON.parse(body));
+      case "DELETE":
+        return deleteUser(userId);
+      default:
+        return response(405, { error: "Method not allowed" });
+    }
+  } catch (err) {
+    console.error("Error:", JSON.stringify(err));
+    return response(500, { error: "Internal server error" });
+  }
+};
+
+const getUser = async (id) => {
+  const { Item } = await ddb.send(new GetCommand({
+    TableName: TABLE,
+    Key: { PK: `USER#${id}`, SK: "PROFILE" }
+  }));
+  return Item
+    ? response(200, Item)
+    : response(404, { error: "User not found" });
+};
+
+const createUser = async (data) => {
+  const id = randomUUID();
+  const now = new Date().toISOString();
+  const item = {
+    PK: `USER#${id}`,
+    SK: "PROFILE",
+    id,
+    email: data.email,
+    name: data.name,
+    createdAt: now,
+    updatedAt: now,
+    GSI1PK: `EMAIL#${data.email}`,
+    GSI1SK: now,
+  };
+  await ddb.send(new PutCommand({
+    TableName: TABLE,
+    Item: item,
+    ConditionExpression: "attribute_not_exists(PK)",
+  }));
+  return response(201, item);
+};
+
+const response = (statusCode, body) => ({
+  statusCode,
+  headers: {
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": "*",
+  },
+  body: JSON.stringify(body),
+});</code></pre>
+
+  <h3>Terraform — Complete Infrastructure</h3>
+  <pre><code class="language-hcl"># main.tf
+terraform {
+  required_providers {
+    aws = { source = "hashicorp/aws", version = "~> 5.0" }
+    archive = { source = "hashicorp/archive", version = "~> 2.0" }
+  }
+  backend "s3" {
+    bucket         = "my-tfstate"
+    key            = "serverless-api/terraform.tfstate"
+    region         = "us-east-1"
+    dynamodb_table = "terraform-lock"
+    encrypt        = true
+  }
+}
+
+# DynamoDB Table
+resource "aws_dynamodb_table" "users" {
+  name           = "${var.app_name}-users-${var.env}"
+  billing_mode   = "PAY_PER_REQUEST"
+  hash_key       = "PK"
+  range_key      = "SK"
+
+  attribute { name = "PK";    type = "S" }
+  attribute { name = "SK";    type = "S" }
+  attribute { name = "GSI1PK"; type = "S" }
+  attribute { name = "GSI1SK"; type = "S" }
+
+  global_secondary_index {
+    name            = "GSI1"
+    hash_key        = "GSI1PK"
+    range_key       = "GSI1SK"
+    projection_type = "ALL"
+  }
+
+  point_in_time_recovery { enabled = true }
+  server_side_encryption  { enabled = true }
+
+  tags = local.common_tags
+}
+
+# Lambda package
+data "archive_file" "lambda" {
+  type        = "zip"
+  source_dir  = "${path.module}/../src"
+  output_path = "${path.module}/dist/lambda.zip"
+}
+
+# IAM Role
+resource "aws_iam_role" "lambda" {
+  name = "${var.app_name}-lambda-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{ Effect = "Allow", Principal = { Service = "lambda.amazonaws.com" }, Action = "sts:AssumeRole" }]
+  })
+}
+
+resource "aws_iam_role_policy" "lambda" {
+  role = aws_iam_role.lambda.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["dynamodb:GetItem","dynamodb:PutItem","dynamodb:UpdateItem","dynamodb:DeleteItem","dynamodb:Query","dynamodb:Scan"]
+        Resource = [aws_dynamodb_table.users.arn, "${aws_dynamodb_table.users.arn}/index/*"]
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["logs:CreateLogGroup","logs:CreateLogStream","logs:PutLogEvents","xray:PutTraceSegments","xray:PutTelemetryRecords"]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# Lambda Function
+resource "aws_lambda_function" "api" {
+  function_name    = "${var.app_name}-api-${var.env}"
+  filename         = data.archive_file.lambda.output_path
+  source_code_hash = data.archive_file.lambda.output_base64sha256
+  handler          = "handlers/users.handler"
+  runtime          = "nodejs20.x"
+  role             = aws_iam_role.lambda.arn
+  timeout          = 30
+  memory_size      = 512
+
+  environment {
+    variables = {
+      USERS_TABLE = aws_dynamodb_table.users.name
+      ENV         = var.env
+    }
+  }
+
+  tracing_config { mode = "Active" }  # X-Ray
+
+  # Provisioned concurrency for prod
+  dynamic "provisioned_concurrency_config" {
+    for_each = var.env == "prod" ? [1] : []
+    content {
+      provisioned_concurrent_executions = 5
+    }
+  }
+
+  tags = local.common_tags
+}
+
+# Lambda alias + versioning
+resource "aws_lambda_alias" "live" {
+  name             = "live"
+  function_name    = aws_lambda_function.api.function_name
+  function_version = aws_lambda_function.api.version
+}
+
+# API Gateway HTTP API
+resource "aws_apigatewayv2_api" "main" {
+  name          = "${var.app_name}-api"
+  protocol_type = "HTTP"
+  cors_configuration {
+    allow_origins = ["*"]
+    allow_methods = ["GET","POST","PUT","DELETE","OPTIONS"]
+    allow_headers = ["Content-Type","Authorization"]
+    max_age       = 300
+  }
+}
+
+resource "aws_apigatewayv2_integration" "lambda" {
+  api_id                 = aws_apigatewayv2_api.main.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_alias.live.invoke_arn
+  payload_format_version = "2.0"
+}
+
+resource "aws_apigatewayv2_route" "users_list" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /users"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "users_crud" {
+  for_each  = toset(["GET /users/{id}", "POST /users", "PUT /users/{id}", "DELETE /users/{id}"])
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = each.value
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_stage" "prod" {
+  api_id      = aws_apigatewayv2_api.main.id
+  name        = var.env
+  auto_deploy = true
+
+  access_log_settings {
+    destination_arn = aws_cloudwatch_log_group.api_gw.arn
+    format = jsonencode({
+      requestId = "$context.requestId"
+      ip        = "$context.identity.sourceIp"
+      latency   = "$context.integrationLatency"
+      status    = "$context.status"
+      route     = "$context.routeKey"
+    })
+  }
+
+  default_route_settings {
+    throttling_burst_limit = 5000
+    throttling_rate_limit  = 10000
+  }
+}
+
+resource "aws_lambda_permission" "api_gw" {
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_alias.live.function_name
+  qualifier     = aws_lambda_alias.live.name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
+}
+
+output "api_endpoint" {
+  value = aws_apigatewayv2_stage.prod.invoke_url
+}</code></pre>
+
+  <h3>GitHub Actions CI/CD</h3>
+  <pre><code class="language-yaml"># .github/workflows/deploy.yml
+name: Deploy Serverless API
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: npm ci && npm test
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::123456789:role/github-actions-role
+          aws-region: us-east-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Apply
+        working-directory: infrastructure
+        run: |
+          terraform init
+          terraform apply -auto-approve -var="env=prod"
+
+      - name: Update Lambda Code (fast path)
+        run: |
+          zip -r lambda.zip src/
+          aws lambda update-function-code \
+            --function-name myapp-api-prod \
+            --zip-file fileb://lambda.zip
+          aws lambda wait function-updated \
+            --function-name myapp-api-prod
+          # Publish new version and update alias
+          VERSION=$(aws lambda publish-version \
+            --function-name myapp-api-prod \
+            --query Version --output text)
+          aws lambda update-alias \
+            --function-name myapp-api-prod \
+            --name live \
+            --function-version $VERSION</code></pre>
+</section>
+
+<!-- ==================== PROJECT 6: FULL DEVSECOPS PIPELINE ==================== -->
+<section id="project-devsecops-pipeline" class="section">
+  <h2>Project 6: Full DevSecOps Pipeline — Jenkins + SonarQube + Trivy + ArgoCD + Kubernetes</h2>
+
+  <div class="diagram-box">
+    <strong>Pipeline Flow</strong><br>
+    GitHub Push → Jenkins → Unit Tests → SonarQube (SAST) → Docker Build → Trivy (Image Scan)<br>
+    → ECR Push → ArgoCD Sync → Kubernetes Deploy → OWASP ZAP (DAST) → Slack Notify
+  </div>
+
+  <h3>Jenkins Pipeline (Declarative)</h3>
+  <pre><code class="language-groovy">// Jenkinsfile
+pipeline {
+  agent {
+    kubernetes {
+      yaml """
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: docker
+    image: docker:24-dind
+    securityContext:
+      privileged: true
+    volumeMounts:
+    - name: docker-sock
+      mountPath: /var/run/docker.sock
+  - name: tools
+    image: amazon/aws-cli:2.x
+    command: ['sleep','infinity']
+  volumes:
+  - name: docker-sock
+    hostPath:
+      path: /var/run/docker.sock
+"""
+    }
+  }
+
+  environment {
+    APP_NAME    = 'myapp'
+    ECR_REGISTRY = '123456789.dkr.ecr.us-east-1.amazonaws.com'
+    GIT_COMMIT_SHORT = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+    IMAGE_TAG   = "${BUILD_NUMBER}-${GIT_COMMIT_SHORT}"
+    SONAR_URL   = 'http://sonarqube:9000'
+    ARGOCD_SERVER = 'argocd.internal:443'
+  }
+
+  options {
+    timeout(time: 30, unit: 'MINUTES')
+    buildDiscarder(logRotator(numToKeepStr: '20'))
+    disableConcurrentBuilds()
+  }
+
+  stages {
+    stage('Checkout') {
+      steps {
+        checkout scm
+        script { env.GIT_COMMIT_MSG = sh(script: 'git log -1 --pretty=%B', returnStdout: true).trim() }
+      }
+    }
+
+    stage('Unit Tests') {
+      steps {
+        container('tools') {
+          sh 'npm ci && npm test -- --coverage --ci'
+          publishHTML(target: [allowMissing: false, alwaysLinkToLastBuild: true,
+            keepAll: true, reportDir: 'coverage', reportFiles: 'index.html',
+            reportName: 'Coverage Report'])
+        }
+      }
+      post { always { junit 'test-results/*.xml' } }
+    }
+
+    stage('SonarQube Analysis') {
+      steps {
+        withSonarQubeEnv('SonarQube') {
+          sh """
+            sonar-scanner \\
+              -Dsonar.projectKey=${APP_NAME} \\
+              -Dsonar.sources=src \\
+              -Dsonar.tests=tests \\
+              -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \\
+              -Dsonar.qualitygate.wait=true
+          """
+        }
+      }
+    }
+
+    stage('Quality Gate') {
+      steps {
+        timeout(time: 5, unit: 'MINUTES') {
+          waitForQualityGate abortPipeline: true
+        }
+      }
+    }
+
+    stage('Build Docker Image') {
+      steps {
+        container('docker') {
+          sh """
+            docker build \\
+              --build-arg BUILD_DATE=\$(date -u +%Y-%m-%dT%H:%M:%SZ) \\
+              --build-arg GIT_COMMIT=${GIT_COMMIT_SHORT} \\
+              --label org.opencontainers.image.revision=${GIT_COMMIT_SHORT} \\
+              -t ${ECR_REGISTRY}/${APP_NAME}:${IMAGE_TAG} \\
+              -t ${ECR_REGISTRY}/${APP_NAME}:latest \\
+              .
+          """
+        }
+      }
+    }
+
+    stage('Trivy Scan') {
+      steps {
+        container('tools') {
+          sh """
+            trivy image \\
+              --severity HIGH,CRITICAL \\
+              --exit-code 1 \\
+              --format table \\
+              --ignore-unfixed \\
+              --no-progress \\
+              ${ECR_REGISTRY}/${APP_NAME}:${IMAGE_TAG}
+          """
+        }
+      }
+    }
+
+    stage('Push to ECR') {
+      when { branch 'main' }
+      steps {
+        container('tools') {
+          sh """
+            aws ecr get-login-password --region us-east-1 | \\
+              docker login --username AWS --password-stdin ${ECR_REGISTRY}
+            docker push ${ECR_REGISTRY}/${APP_NAME}:${IMAGE_TAG}
+            docker push ${ECR_REGISTRY}/${APP_NAME}:latest
+          """
+        }
+      }
+    }
+
+    stage('Update GitOps Repo') {
+      when { branch 'main' }
+      steps {
+        withCredentials([sshUserPrivateKey(credentialsId: 'gitops-ssh', keyFileVariable: 'SSH_KEY')]) {
+          sh """
+            git clone git@github.com:org/gitops-repo.git /tmp/gitops
+            cd /tmp/gitops
+            # Update image tag in Helm values
+            sed -i 's|tag:.*|tag: "${IMAGE_TAG}"|' apps/${APP_NAME}/values-prod.yaml
+            git config user.email "jenkins@ci.internal"
+            git config user.name "Jenkins"
+            git add -A
+            git commit -m "ci: update ${APP_NAME} to ${IMAGE_TAG} [skip ci]"
+            git push origin main
+          """
+        }
+      }
+    }
+
+    stage('ArgoCD Sync') {
+      when { branch 'main' }
+      steps {
+        sh """
+          argocd app sync ${APP_NAME} \\
+            --server ${ARGOCD_SERVER} \\
+            --auth-token \${ARGOCD_TOKEN} \\
+            --timeout 300 \\
+            --health
+        """
+      }
+    }
+
+    stage('DAST - OWASP ZAP') {
+      when { branch 'main' }
+      steps {
+        sh """
+          docker run --rm -v \$(pwd):/zap/wrk/:rw \\
+            ghcr.io/zaproxy/zaproxy:stable \\
+            zap-api-scan.py \\
+            -t https://api.myapp.com/openapi.json \\
+            -f openapi \\
+            -r zap-report.html \\
+            -J zap-report.json \\
+            -l WARN
+        """
+        publishHTML(target: [reportDir: '.', reportFiles: 'zap-report.html',
+          reportName: 'ZAP Security Report'])
+      }
+    }
+  }
+
+  post {
+    success {
+      slackSend(channel: '#deployments', color: 'good',
+        message: ":white_check_mark: *${APP_NAME}* `${IMAGE_TAG}` deployed to prod by ${env.GIT_AUTHOR_NAME}")
+    }
+    failure {
+      slackSend(channel: '#deployments', color: 'danger',
+        message: ":x: *${APP_NAME}* pipeline failed at stage `${STAGE_NAME}` — <${BUILD_URL}|View Build>")
+    }
+  }
+}</code></pre>
+
+  <h3>SonarQube + Trivy Docker Compose (Self-hosted)</h3>
+  <pre><code class="language-yaml"># docker-compose.yml — DevSecOps tools stack
+version: '3.8'
+services:
+  sonarqube:
+    image: sonarqube:community
+    environment:
+      SONAR_JDBC_URL: jdbc:postgresql://sonar-db:5432/sonar
+      SONAR_JDBC_USERNAME: sonar
+      SONAR_JDBC_PASSWORD: sonar
+    volumes:
+      - sonar_data:/opt/sonarqube/data
+      - sonar_logs:/opt/sonarqube/logs
+    ports: ["9000:9000"]
+    ulimits:
+      nofile: { soft: 65536, hard: 65536 }
+    depends_on: [sonar-db]
+
+  sonar-db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: sonar
+      POSTGRES_PASSWORD: sonar
+      POSTGRES_DB: sonar
+    volumes: [sonar_db:/var/lib/postgresql/data]
+
+  jenkins:
+    image: jenkins/jenkins:lts-jdk17
+    privileged: true
+    user: root
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports: ["8080:8080","50000:50000"]
+
+  nexus:
+    image: sonatype/nexus3
+    volumes: [nexus_data:/nexus-data]
+    ports: ["8081:8081"]
+
+volumes:
+  sonar_data: {}
+  sonar_logs: {}
+  sonar_db: {}
+  jenkins_home: {}
+  nexus_data: {}</code></pre>
+
+  <div class="qa-block">
+    <div class="qa-question">Q: What is "shift-left security" and how does this pipeline implement it?</div>
+    <div class="qa-answer">A: Shift-left means moving security testing earlier in the development lifecycle rather than testing only in production. This pipeline implements it at multiple layers: SonarQube SAST catches vulnerabilities in source code before building; Trivy scans the container image for CVEs before pushing; OWASP ZAP DAST tests the running API; Quality Gates block merges if security score fails. The result: developers get security feedback within minutes of committing code, not weeks after deployment.</div>
+  </div>
+</section>
+
+<!-- ==================== PROJECT 7: WORDPRESS HA ==================== -->
+<section id="project-wordpress-ha" class="section">
+  <h2>Project 7: WordPress HA — EC2 ASG + RDS + EFS + CloudFront + WAF</h2>
+
+  <div class="diagram-box">
+    <strong>Architecture</strong><br>
+    Users → CloudFront (CDN/WAF) → ALB → EC2 ASG (WordPress) → RDS Aurora MySQL (Multi-AZ)<br>
+    WordPress EC2s share /var/www/html via EFS (shared filesystem)<br>
+    Secrets Manager (DB password) | ACM (SSL) | Route53 (DNS)
+  </div>
+
+  <h3>Terraform — WordPress HA Infrastructure</h3>
+  <pre><code class="language-hcl"># WordPress HA Terraform
+
+# EFS Filesystem for shared WordPress files
+resource "aws_efs_file_system" "wordpress" {
+  creation_token   = "wordpress-efs"
+  performance_mode = "generalPurpose"
+  throughput_mode  = "elastic"
+  encrypted        = true
+
+  lifecycle_policy {
+    transition_to_ia = "AFTER_30_DAYS"
+  }
+  tags = { Name = "wordpress-efs" }
+}
+
+resource "aws_efs_mount_target" "wordpress" {
+  for_each        = toset(module.vpc.private_subnet_ids)
+  file_system_id  = aws_efs_file_system.wordpress.id
+  subnet_id       = each.value
+  security_groups = [aws_security_group.efs.id]
+}
+
+resource "aws_efs_access_point" "wordpress" {
+  file_system_id = aws_efs_file_system.wordpress.id
+  posix_user     = { uid = 33, gid = 33 }    # www-data
+  root_directory = {
+    path = "/wordpress"
+    creation_info = { owner_uid = 33, owner_gid = 33, permissions = "0755" }
+  }
+}
+
+# RDS Aurora MySQL
+resource "aws_rds_cluster" "wordpress" {
+  cluster_identifier      = "wordpress-aurora"
+  engine                  = "aurora-mysql"
+  engine_version          = "8.0.mysql_aurora.3.04.0"
+  database_name           = "wordpress"
+  master_username         = "wpadmin"
+  manage_master_user_password = true    # Secrets Manager rotation
+  db_subnet_group_name    = aws_db_subnet_group.main.name
+  vpc_security_group_ids  = [aws_security_group.rds.id]
+  backup_retention_period = 7
+  preferred_backup_window = "03:00-04:00"
+  skip_final_snapshot     = false
+  final_snapshot_identifier = "wordpress-final-${formatdate("YYYYMMDDhhmmss", timestamp())}"
+  enabled_cloudwatch_logs_exports = ["audit","error","general","slowquery"]
+  deletion_protection     = true
+  tags = local.common_tags
+}
+
+resource "aws_rds_cluster_instance" "wordpress" {
+  count              = 2
+  cluster_identifier = aws_rds_cluster.wordpress.id
+  instance_class     = "db.r6g.large"
+  engine             = aws_rds_cluster.wordpress.engine
+  publicly_accessible = false
+}
+
+# Launch Template with user data
+resource "aws_launch_template" "wordpress" {
+  name_prefix   = "wordpress-"
+  image_id      = data.aws_ami.amazon_linux.id
+  instance_type = "t3.medium"
+  key_name      = var.key_name
+
+  iam_instance_profile { name = aws_iam_instance_profile.wordpress.name }
+  vpc_security_group_ids = [aws_security_group.wordpress.id]
+
+  user_data = base64encode(templatefile("${path.module}/userdata.sh.tpl", {
+    efs_id       = aws_efs_file_system.wordpress.id
+    efs_ap_id    = aws_efs_access_point.wordpress.id
+    db_host      = aws_rds_cluster.wordpress.endpoint
+    db_secret    = aws_rds_cluster.wordpress.master_user_secret[0].secret_arn
+    wp_domain    = var.domain_name
+    region       = var.aws_region
+  }))
+
+  block_device_mappings {
+    device_name = "/dev/xvda"
+    ebs {
+      volume_size           = 20
+      volume_type           = "gp3"
+      encrypted             = true
+      delete_on_termination = true
+    }
+  }
+
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_tokens                 = "required"    # IMDSv2
+    http_put_response_hop_limit = 1
+  }
+
+  tag_specifications {
+    resource_type = "instance"
+    tags = merge(local.common_tags, { Name = "wordpress-web" })
+  }
+}
+
+# ASG
+resource "aws_autoscaling_group" "wordpress" {
+  name                = "wordpress-asg"
+  vpc_zone_identifier = module.vpc.private_subnet_ids
+  target_group_arns   = [aws_lb_target_group.wordpress.arn]
+  min_size            = 2
+  max_size            = 10
+  desired_capacity    = 2
+  health_check_type         = "ELB"
+  health_check_grace_period = 300
+
+  launch_template {
+    id      = aws_launch_template.wordpress.id
+    version = "$Latest"
+  }
+
+  instance_refresh {
+    strategy = "Rolling"
+    preferences {
+      min_healthy_percentage = 50
+      instance_warmup        = 300
+    }
+  }
+}
+
+# CloudFront with WAF
+resource "aws_cloudfront_distribution" "wordpress" {
+  origin {
+    domain_name = aws_lb.wordpress.dns_name
+    origin_id   = "ALB"
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "https-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
+    custom_header {
+      name  = "X-Origin-Secret"
+      value = random_password.origin_secret.result
+    }
+  }
+
+  enabled             = true
+  aliases             = [var.domain_name, "www.${var.domain_name}"]
+  default_root_object = "index.php"
+
+  default_cache_behavior {
+    allowed_methods        = ["DELETE","GET","HEAD","OPTIONS","PATCH","POST","PUT"]
+    cached_methods         = ["GET","HEAD"]
+    target_origin_id       = "ALB"
+    viewer_protocol_policy = "redirect-to-https"
+    compress               = true
+
+    forwarded_values {
+      query_string = true
+      cookies { forward = "whitelist"; whitelisted_names = ["wordpress_*","wp_*","comment_*"] }
+      headers = ["Host","Authorization","CloudFront-Forwarded-Proto"]
+    }
+
+    cache_policy_id = aws_cloudfront_cache_policy.wp_dynamic.id
+  }
+
+  # Cache static assets aggressively
+  ordered_cache_behavior {
+    path_pattern     = "/wp-content/*"
+    allowed_methods  = ["GET","HEAD"]
+    cached_methods   = ["GET","HEAD"]
+    target_origin_id = "ALB"
+    viewer_protocol_policy = "redirect-to-https"
+    compress = true
+    default_ttl = 86400
+    max_ttl     = 604800
+    forwarded_values {
+      query_string = false
+      cookies { forward = "none" }
+    }
+  }
+
+  web_acl_id = aws_wafv2_web_acl.wordpress.arn
+
+  viewer_certificate {
+    acm_certificate_arn      = aws_acm_certificate.wordpress.arn
+    ssl_support_method       = "sni-only"
+    minimum_protocol_version = "TLSv1.2_2021"
+  }
+
+  restrictions {
+    geo_restriction { restriction_type = "none" }
+  }
+}</code></pre>
+
+  <h3>WordPress User Data Script</h3>
+  <pre><code class="language-bash">#!/bin/bash
+# userdata.sh.tpl — WordPress setup on EC2
+set -euo pipefail
+
+# Install packages
+dnf update -y
+dnf install -y amazon-efs-utils php8.2 php8.2-{fpm,mysqlnd,gd,xml,mbstring,opcache,redis,zip} nginx
+
+# Mount EFS
+mkdir -p /var/www/html
+echo "${efs_id}:/ /var/www/html efs _netdev,tls,accesspoint=${efs_ap_id} 0 0" >> /etc/fstab
+mount -a
+
+# Get DB credentials from Secrets Manager
+DB_SECRET=$(aws secretsmanager get-secret-value \
+  --secret-id "${db_secret}" --region "${region}" \
+  --query SecretString --output text)
+DB_PASSWORD=$(echo $DB_SECRET | python3 -c "import sys,json; print(json.load(sys.stdin)['password'])")
+
+# Install WordPress (only if not already done — EFS shared)
+if [ ! -f /var/www/html/wp-config.php ]; then
+  cd /tmp
+  curl -O https://wordpress.org/latest.tar.gz
+  tar -xzf latest.tar.gz
+  cp -r wordpress/. /var/www/html/
+  chown -R www-data:www-data /var/www/html
+
+  # Configure wp-config.php
+  cp /var/www/html/wp-config-sample.php /var/www/html/wp-config.php
+  sed -i "s/database_name_here/wordpress/" /var/www/html/wp-config.php
+  sed -i "s/username_here/wpadmin/" /var/www/html/wp-config.php
+  sed -i "s/password_here/$DB_PASSWORD/" /var/www/html/wp-config.php
+  sed -i "s/localhost/${db_host}/" /var/www/html/wp-config.php
+
+  # Add Redis object cache config
+  cat >> /var/www/html/wp-config.php << 'EOF'
+define('WP_REDIS_HOST', 'redis.internal');
+define('WP_REDIS_PORT', 6379);
+define('WP_CACHE', true);
+EOF
+fi
+
+# Configure PHP-FPM
+sed -i 's/user = apache/user = nginx/' /etc/php-fpm.d/www.conf
+sed -i 's/group = apache/group = nginx/' /etc/php-fpm.d/www.conf
+
+# Start services
+systemctl enable --now nginx php-fpm
+systemctl enable --now amazon-ssm-agent</code></pre>
+</section>
+
+<!-- ==================== PROJECT 8: ECS FARGATE MICROSERVICES ==================== -->
+<section id="project-ecs-microservices" class="section">
+  <h2>Project 8: ECS Fargate Microservices + Terraform + GitHub Actions</h2>
+
+  <div class="diagram-box">
+    <strong>Architecture</strong><br>
+    3 Microservices: API Gateway → Auth Service, Product Service, Order Service<br>
+    Each: ECS Fargate Service + ECR + Task Definition + Service Connect (mTLS)<br>
+    Shared: ALB (path-based routing) | RDS PostgreSQL | ElastiCache Redis | SQS
+  </div>
+
+  <h3>Terraform Modules Structure</h3>
+  <pre><code class="language-bash">infrastructure/
+├── modules/
+│   ├── ecs-service/       # Reusable ECS Fargate service module
+│   │   ├── main.tf
+│   │   ├── variables.tf
+│   │   └── outputs.tf
+│   ├── ecr/               # Container registry
+│   ├── alb-target-group/  # ALB listener rules
+│   └── iam-task-role/     # Per-service IAM roles
+├── environments/
+│   ├── prod/
+│   │   ├── main.tf
+│   │   └── terraform.tfvars
+│   └── staging/
+└── shared/
+    ├── vpc/
+    ├── ecs-cluster/
+    └── rds/</code></pre>
+
+  <h3>Reusable ECS Service Module</h3>
+  <pre><code class="language-hcl"># modules/ecs-service/main.tf
+variable "service_name"    { type = string }
+variable "cluster_id"      { type = string }
+variable "container_image" { type = string }
+variable "container_port"  { type = number }
+variable "cpu"             { type = number; default = 256 }
+variable "memory"          { type = number; default = 512 }
+variable "desired_count"   { type = number; default = 2 }
+variable "target_group_arn" { type = string }
+variable "subnets"         { type = list(string) }
+variable "security_groups" { type = list(string) }
+variable "environment_vars" { type = list(object({ name=string, value=string })) }
+variable "secrets"         { type = list(object({ name=string, valueFrom=string })) }
+variable "task_role_arn"   { type = string }
+
+resource "aws_ecs_task_definition" "this" {
+  family                   = var.service_name
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = var.cpu
+  memory                   = var.memory
+  execution_role_arn       = aws_iam_role.execution.arn
+  task_role_arn            = var.task_role_arn
+
+  container_definitions = jsonencode([{
+    name  = var.service_name
+    image = var.container_image
+    portMappings = [{
+      name          = var.service_name
+      containerPort = var.container_port
+      protocol      = "tcp"
+      appProtocol   = "http"
+    }]
+    environment = var.environment_vars
+    secrets     = var.secrets
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        awslogs-group         = "/ecs/${var.service_name}"
+        awslogs-region        = data.aws_region.current.name
+        awslogs-stream-prefix = "ecs"
+      }
+    }
+    healthCheck = {
+      command     = ["CMD-SHELL", "curl -f http://localhost:${var.container_port}/health || exit 1"]
+      interval    = 30
+      timeout     = 5
+      retries     = 3
+      startPeriod = 60
+    }
+  }])
+}
+
+resource "aws_ecs_service" "this" {
+  name            = var.service_name
+  cluster         = var.cluster_id
+  task_definition = aws_ecs_task_definition.this.arn
+  desired_count   = var.desired_count
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets         = var.subnets
+    security_groups = var.security_groups
+    assign_public_ip = false
+  }
+
+  load_balancer {
+    target_group_arn = var.target_group_arn
+    container_name   = var.service_name
+    container_port   = var.container_port
+  }
+
+  service_connect_configuration {
+    enabled   = true
+    namespace = aws_service_discovery_private_dns_namespace.main.arn
+    service {
+      port_name = var.service_name
+      client_alias {
+        port     = var.container_port
+        dns_name = var.service_name
+      }
+    }
+  }
+
+  deployment_circuit_breaker {
+    enable   = true
+    rollback = true
+  }
+
+  deployment_controller { type = "ECS" }
+
+  lifecycle {
+    ignore_changes = [task_definition, desired_count]
+  }
+}
+
+# Auto Scaling
+resource "aws_appautoscaling_target" "this" {
+  max_capacity       = 10
+  min_capacity       = var.desired_count
+  resource_id        = "service/${var.cluster_id}/${var.service_name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+}
+
+resource "aws_appautoscaling_policy" "cpu" {
+  name               = "${var.service_name}-cpu-scaling"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.this.resource_id
+  scalable_dimension = aws_appautoscaling_target.this.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.this.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification { predefined_metric_type = "ECSServiceAverageCPUUtilization" }
+    target_value       = 60.0
+    scale_in_cooldown  = 300
+    scale_out_cooldown = 60
+  }
+}
+
+# environments/prod/main.tf — Compose all services
+module "auth_service" {
+  source         = "../../modules/ecs-service"
+  service_name   = "auth-service"
+  cluster_id     = module.ecs_cluster.id
+  container_image = "${module.ecr["auth"].url}:${var.auth_tag}"
+  container_port = 3001
+  cpu    = 512
+  memory = 1024
+  target_group_arn = module.alb.target_groups["auth"].arn
+  subnets          = module.vpc.private_subnets
+  security_groups  = [aws_security_group.ecs_tasks.id]
+  task_role_arn    = module.iam_task_role["auth"].arn
+  environment_vars = [
+    { name = "JWT_SECRET_ARN", value = aws_secretsmanager_secret.jwt.arn },
+    { name = "REDIS_HOST",     value = module.elasticache.endpoint }
+  ]
+  secrets = [
+    { name = "JWT_SECRET", valueFrom = aws_secretsmanager_secret.jwt.arn }
+  ]
+}</code></pre>
+
+  <h3>Multi-Service GitHub Actions</h3>
+  <pre><code class="language-yaml"># .github/workflows/deploy-service.yml
+name: Deploy Microservice
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'services/**'
+      - '.github/workflows/deploy-service.yml'
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.detect.outputs.services }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 2 }
+      - id: detect
+        run: |
+          CHANGED=$(git diff --name-only HEAD~1 HEAD | grep '^services/' | cut -d/ -f2 | sort -u | jq -R -s -c 'split("\n")[:-1]')
+          echo "services=$CHANGED" >> $GITHUB_OUTPUT
+
+  deploy:
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    if: needs.detect-changes.outputs.services != '[]'
+    strategy:
+      matrix:
+        service: ${{ fromJSON(needs.detect-changes.outputs.services) }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE }}
+          aws-region: us-east-1
+
+      - name: Login to ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and Push
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          cd services/${{ matrix.service }}
+          docker build -t $ECR_REGISTRY/${{ matrix.service }}:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/${{ matrix.service }}:$IMAGE_TAG
+
+      - name: Deploy to ECS
+        run: |
+          # Force new deployment — picks up latest image if using :sha tag
+          aws ecs update-service \
+            --cluster prod-cluster \
+            --service ${{ matrix.service }} \
+            --force-new-deployment \
+            --region us-east-1
+
+          # Wait for stability
+          aws ecs wait services-stable \
+            --cluster prod-cluster \
+            --services ${{ matrix.service }}</code></pre>
+</section>
+
+<!-- ==================== PROJECT 9: ISTIO SERVICE MESH ==================== -->
+<section id="project-istio-mesh" class="section">
+  <h2>Project 9: Production Istio Service Mesh on EKS — Full Observability + mTLS + Canary</h2>
+
+  <div class="diagram-box">
+    <strong>Stack</strong><br>
+    EKS → Istio (mTLS everywhere) → Kiali (topology) → Jaeger (traces) → Prometheus/Grafana<br>
+    Canary deploys via Flagger + Istio | cert-manager + Let's Encrypt for ingress TLS
+  </div>
+
+  <h3>Istio Installation (Production)</h3>
+  <pre><code class="language-bash"># Install Istio with production profile
+istioctl install --set profile=default \
+  --set values.global.meshID=prod-mesh \
+  --set values.global.network=prod-network \
+  --set values.global.multiCluster.clusterName=eks-prod \
+  --set values.pilot.traceSampling=100 \
+  -y
+
+# Verify installation
+istioctl verify-install
+
+# Enable sidecar injection for namespace
+kubectl label namespace default istio-injection=enabled
+
+# Kiali, Jaeger, Grafana, Prometheus
+kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.20/samples/addons/kiali.yaml
+kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.20/samples/addons/jaeger.yaml
+kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.20/samples/addons/grafana.yaml
+kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.20/samples/addons/prometheus.yaml</code></pre>
+
+  <h3>Gateway + VirtualService (Production)</h3>
+  <pre><code class="language-yaml"># istio-ingress.yaml
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: prod-gateway
+  namespace: istio-system
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - port:
+        number: 443
+        name: https
+        protocol: HTTPS
+      tls:
+        mode: SIMPLE
+        credentialName: prod-tls-secret    # cert-manager secret
+      hosts: ["api.myapp.com","*.myapp.com"]
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts: ["*"]
+      tls:
+        httpsRedirect: true
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: api-vs
+spec:
+  hosts: ["api.myapp.com"]
+  gateways: ["istio-system/prod-gateway"]
+  http:
+    # Header-based canary routing
+    - match:
+        - headers:
+            x-canary: { exact: "true" }
+      route:
+        - destination:
+            host: api-service
+            subset: canary
+    # A/B test by user segment
+    - match:
+        - headers:
+            x-user-segment: { regex: "beta-.*" }
+      route:
+        - destination:
+            host: api-service
+            subset: v2
+    # Production traffic split (canary rollout)
+    - route:
+        - destination:
+            host: api-service
+            subset: stable
+          weight: 90
+        - destination:
+            host: api-service
+            subset: canary
+          weight: 10
+      timeout: 10s
+      retries:
+        attempts: 3
+        perTryTimeout: 3s
+        retryOn: "5xx,reset,connect-failure,retriable-4xx"
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: api-dr
+spec:
+  host: api-service
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 1000
+        connectTimeout: 5s
+      http:
+        http1MaxPendingRequests: 100
+        http2MaxRequests: 1000
+        maxRequestsPerConnection: 10
+    outlierDetection:
+      consecutiveGatewayErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+  subsets:
+    - name: stable
+      labels: { version: stable }
+    - name: canary
+      labels: { version: canary }
+    - name: v2
+      labels: { version: v2 }</code></pre>
+
+  <h3>Flagger Canary (Automated Progressive Delivery)</h3>
+  <pre><code class="language-bash"># Install Flagger for Istio
+helm upgrade -i flagger flagger/flagger \
+  --namespace=istio-system \
+  --set crd.create=false \
+  --set meshProvider=istio \
+  --set metricsServer=http://prometheus:9090</code></pre>
+  <pre><code class="language-yaml"># canary.yaml — Automated canary with Flagger
+apiVersion: flagger.app/v1beta1
+kind: Canary
+metadata:
+  name: api-service
+  namespace: default
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: api-service
+  progressDeadlineSeconds: 600
+  service:
+    port: 80
+    targetPort: 8080
+    gateways: ["istio-system/prod-gateway"]
+    hosts: ["api.myapp.com"]
+    retries:
+      attempts: 3
+      perTryTimeout: 5s
+      retryOn: "gateway-error,connect-failure,refused-stream"
+  analysis:
+    interval: 1m
+    threshold: 5              # Max failed checks before rollback
+    maxWeight: 50             # Max canary traffic (50%)
+    stepWeight: 10            # Increment per check
+    metrics:
+      - name: request-success-rate
+        thresholdRange: { min: 99 }
+        interval: 1m
+      - name: request-duration
+        thresholdRange: { max: 500 }   # p99 < 500ms
+        interval: 1m
+    webhooks:
+      - name: load-test
+        url: http://flagger-loadtester.test/
+        timeout: 5s
+        metadata:
+          cmd: "hey -z 1m -q 10 -c 2 http://api-service-canary.default/"
+      - name: slack-notify
+        url: https://hooks.slack.com/services/XXX
+        type: confirm
+        metadata:
+          message: "Canary analysis for {{ name }} passed! Promote to production?"</code></pre>
+
+  <h3>mTLS Policy + Authorization</h3>
+  <pre><code class="language-yaml"># security.yaml
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: default
+spec:
+  mtls:
+    mode: STRICT        # All pod-to-pod traffic must use mTLS
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: api-authz
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: api-service
+  action: ALLOW
+  rules:
+    # Only allow frontend and internal services
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/default/sa/frontend
+              - cluster.local/ns/monitoring/sa/prometheus
+      to:
+        - operation:
+            methods: ["GET"]
+            paths: ["/api/*", "/health", "/metrics"]
+    # Admin endpoints require specific service account
+    - from:
+        - source:
+            principals: ["cluster.local/ns/default/sa/admin-service"]
+      to:
+        - operation:
+            methods: ["GET","POST","PUT","DELETE"]
+            paths: ["/admin/*"]</code></pre>
+
+  <div class="qa-block">
+    <div class="qa-question">Q: What is the difference between Istio's Circuit Breaker and Kubernetes Liveness Probes?</div>
+    <div class="qa-answer">A: They operate at different layers. Kubernetes Liveness Probes restart individual pods when they become unhealthy — they act on the container level. Istio's Circuit Breaker (via <code>outlierDetection</code> in DestinationRule) operates at the traffic routing layer — it temporarily ejects upstream hosts from the load balancing pool when they return consecutive errors, stopping traffic to degraded instances without killing them. Istio CB responds to actual error rates in real traffic, while K8s probes use synthetic checks. Together: K8s probes handle permanent failures, Istio handles transient service-level degradation.</div>
+  </div>
+</section>
+
+<!-- ==================== ADVANCED CI/CD PATTERNS ==================== -->
+<section id="cicd-advanced" class="section">
+  <h2>Advanced CI/CD Patterns</h2>
+
+  <h3>GitOps with ArgoCD App-of-Apps</h3>
+  <pre><code class="language-yaml"># apps/root-app.yaml — Root Application
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root-app
+  namespace: argocd
+  finalizers: [resources-finalizer.argocd.argoproj.io]
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/org/gitops-repo
+    targetRevision: HEAD
+    path: apps/
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions: [CreateNamespace=true]
+---
+# apps/myapp.yaml — Child Application
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: myapp-prod
+  namespace: argocd
+spec:
+  project: prod
+  source:
+    repoURL: https://github.com/org/gitops-repo
+    targetRevision: HEAD
+    path: environments/prod/myapp
+    helm:
+      valueFiles: [values-prod.yaml]
+      parameters:
+        - name: image.tag
+          value: "1.2.3"
+  destination:
+    server: https://eks-prod.example.com
+    namespace: myapp
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 5
+      backoff: { duration: 5s, factor: 2, maxDuration: 3m }
+  revisionHistoryLimit: 10</code></pre>
+
+  <h3>Blue-Green Deployment with Kubernetes</h3>
+  <pre><code class="language-yaml"># blue-green strategy using service selector switching
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp-blue
+  labels:
+    app: myapp
+    slot: blue
+spec:
+  replicas: 3
+  selector:
+    matchLabels: { app: myapp, slot: blue }
+  template:
+    metadata:
+      labels: { app: myapp, slot: blue, version: v1 }
+    spec:
+      containers:
+        - name: myapp
+          image: myapp:v1
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp-green
+  labels:
+    app: myapp
+    slot: green
+spec:
+  replicas: 3
+  selector:
+    matchLabels: { app: myapp, slot: green }
+  template:
+    metadata:
+      labels: { app: myapp, slot: green, version: v2 }
+    spec:
+      containers:
+        - name: myapp
+          image: myapp:v2
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: myapp
+spec:
+  selector:
+    app: myapp
+    slot: blue     # Switch to 'green' to cut over
+  ports:
+    - port: 80
+      targetPort: 8080</code></pre>
+  <pre><code class="language-bash"># Blue-Green switch script
+CURRENT=$(kubectl get service myapp -o jsonpath='{.spec.selector.slot}')
+NEW=$([ "$CURRENT" = "blue" ] && echo "green" || echo "blue")
+
+# Verify new slot is healthy first
+kubectl rollout status deployment/myapp-$NEW --timeout=300s
+
+# Switch traffic
+kubectl patch service myapp -p "{\"spec\":{\"selector\":{\"slot\":\"$NEW\"}}}"
+echo "Switched from $CURRENT to $NEW"
+
+# Keep old deployment for quick rollback (delete after confidence)
+# kubectl delete deployment myapp-$CURRENT</code></pre>
+
+  <h3>GitHub Actions — Reusable Workflows</h3>
+  <pre><code class="language-yaml"># .github/workflows/reusable-deploy.yml
+name: Reusable Deploy
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      image_tag:
+        required: true
+        type: string
+      service_name:
+        required: true
+        type: string
+    secrets:
+      AWS_ROLE:
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      id-token: write
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE }}
+          aws-region: us-east-1
+      - name: Deploy to ECS
+        run: |
+          aws ecs update-service \
+            --cluster ${{ inputs.environment }}-cluster \
+            --service ${{ inputs.service_name }} \
+            --force-new-deployment
+
+# .github/workflows/main.yml — Caller
+name: CI/CD
+on:
+  push:
+    branches: [main]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.meta.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.ECR_REGISTRY }}/myapp
+          tags: type=sha
+
+  deploy-staging:
+    needs: build
+    uses: ./.github/workflows/reusable-deploy.yml
+    with:
+      environment: staging
+      image_tag: ${{ needs.build.outputs.image_tag }}
+      service_name: myapp
+    secrets:
+      AWS_ROLE: ${{ secrets.STAGING_DEPLOY_ROLE }}
+
+  deploy-prod:
+    needs: deploy-staging
+    uses: ./.github/workflows/reusable-deploy.yml
+    with:
+      environment: production
+      image_tag: ${{ needs.build.outputs.image_tag }}
+      service_name: myapp
+    secrets:
+      AWS_ROLE: ${{ secrets.PROD_DEPLOY_ROLE }}</code></pre>
+
+  <div class="qa-block">
+    <div class="qa-question">Q: When would you choose Blue-Green over Canary deployment?</div>
+    <div class="qa-answer">A: Blue-Green is best when you need instant rollback (one service selector change), for stateful apps where gradual migration would cause session split, or when the change is a schema migration requiring a full cutover. Canary is better when you want to validate performance on real traffic progressively, when you have sufficient metrics to automate promotion/rollback decisions (like Flagger), or when the change is risky enough to warrant gradual exposure. Blue-Green has higher resource cost (2x infra during switch); Canary has higher operational complexity.</div>
+  </div>
+</section>
+
+<!-- ==================== KUBERNETES SECURITY ==================== -->
+<section id="k8s-security" class="section">
+  <h2>Kubernetes Security Hardening</h2>
+
+  <h3>Pod Security Standards</h3>
+  <pre><code class="language-yaml"># Enforce restricted PSS at namespace level
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: prod
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+---
+# Compliant pod spec
+apiVersion: v1
+kind: Pod
+metadata:
+  name: secure-pod
+  namespace: prod
+spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 3000
+    fsGroup: 2000
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: app
+      image: myapp:1.0
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: ["ALL"]
+      resources:
+        requests: { cpu: 100m, memory: 128Mi }
+        limits:   { cpu: 500m, memory: 512Mi }
+      volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: cache
+          mountPath: /app/cache
+  volumes:
+    - name: tmp
+      emptyDir: {}
+    - name: cache
+      emptyDir: {}</code></pre>
+
+  <h3>OPA Gatekeeper Policies</h3>
+  <pre><code class="language-yaml"># Require all images to come from approved registry
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: allowedregistries
+spec:
+  crd:
+    spec:
+      names: { kind: AllowedRegistries }
+      validation:
+        openAPIV3Schema:
+          properties:
+            registries: { type: array, items: { type: string } }
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package allowedregistries
+        violation[{"msg": msg}] {
+          container := input.review.object.spec.containers[_]
+          not startswith_any(container.image, input.parameters.registries)
+          msg := sprintf("Image '%v' not from approved registry", [container.image])
+        }
+        startswith_any(str, prefixes) {
+          startswith(str, prefixes[_])
+        }
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: AllowedRegistries
+metadata:
+  name: prod-registries
+spec:
+  match:
+    kinds: [{ apiGroups: [""], kinds: ["Pod"] }]
+    namespaces: ["prod", "staging"]
+  parameters:
+    registries:
+      - "123456789.dkr.ecr.us-east-1.amazonaws.com/"
+      - "gcr.io/myproject/"</code></pre>
+
+  <h3>RBAC Best Practices</h3>
+  <pre><code class="language-yaml"># Principle of least privilege
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: app-role
+  namespace: prod
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get","list","watch"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["myapp-secret"]   # Named secret only
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: app-rolebinding
+  namespace: prod
+subjects:
+  - kind: ServiceAccount
+    name: myapp-sa
+    namespace: prod
+roleRef:
+  kind: Role
+  name: app-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# IRSA — IAM Roles for Service Accounts (EKS)
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: myapp-sa
+  namespace: prod
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::123456789:role/myapp-eks-role</code></pre>
+
+  <h3>Network Policies — Zero Trust</h3>
+  <pre><code class="language-yaml"># Default deny all ingress and egress
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: prod
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+# Allow specific communication
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-api-to-db
+  namespace: prod
+spec:
+  podSelector:
+    matchLabels: { app: postgres }
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels: { app: api-service }
+      ports:
+        - protocol: TCP
+          port: 5432
+---
+# Allow monitoring scrape
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-prometheus
+  namespace: prod
+spec:
+  podSelector: {}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels: { kubernetes.io/metadata.name: monitoring }
+          podSelector:
+            matchLabels: { app: prometheus }
+      ports:
+        - protocol: TCP
+          port: 9090</code></pre>
+</section>
+
+<!-- ==================== INTERVIEW ADDITIONAL Q&A ==================== -->
+<section id="interview-advanced" class="section">
+  <h2>Advanced Interview Q&amp;A</h2>
+
+  <div class="qa-block">
+    <div class="qa-question">Q: Explain the CAP theorem and how it applies to distributed systems you've worked with.</div>
+    <div class="qa-answer">A: CAP theorem states a distributed system can guarantee at most 2 of 3: Consistency (all nodes see same data), Availability (every request gets a response), Partition Tolerance (system works despite network splits). Since network partitions are inevitable in production, you choose CP or AP. DynamoDB defaults to AP (eventual consistency) but supports strongly consistent reads. PostgreSQL Multi-AZ is CP — during failover (~30s), writes are unavailable but consistency is preserved. Kafka is CP by design — leader election during broker failure sacrifices availability briefly. In practice, design for AP and add compensating transactions where consistency matters.</div>
+  </div>
+
+  <div class="qa-block">
+    <div class="qa-question">Q: How do you approach a production incident where latency has spiked 10x?</div>
+    <div class="qa-answer">A: Follow the Four Golden Signals first: check latency (is it all endpoints or specific ones?), error rate (are errors also up?), traffic (did volume spike?), saturation (CPU/memory/connections at limit?). Then: check recent deployments with <code>kubectl rollout history</code> or deployment tracking. Look at APM traces (Jaeger/X-Ray) to find slow spans. Check DB slow query logs. Check connection pool exhaustion. Typical root causes: N+1 queries, missing index on new filter, connection pool saturation, downstream service degraded. If a recent deploy — rollback immediately, investigate afterward. Communicate status every 15 minutes via status page.</div>
+  </div>
+
+  <div class="qa-block">
+    <div class="qa-question">Q: What is the difference between horizontal and vertical scaling, and when would you use each?</div>
+    <div class="qa-answer">A: Vertical scaling (scale up) — add more CPU/RAM to existing instances. Simple, no code changes, but has hard limits, single point of failure, and requires downtime for most instance types. Use for: databases (easier than sharding), stateful apps, when traffic is predictable and bounded. Horizontal scaling (scale out) — add more instances behind a load balancer. Unlimited scale, high availability, but requires stateless design and session management (sticky sessions or centralized session store like Redis). Use for: stateless APIs, web servers, Kubernetes pods with HPA. In practice: scale vertically first (easier), then horizontally once you hit limits. For databases: vertical + read replicas, then sharding or Aurora Serverless.</div>
+  </div>
+
+  <div class="qa-block">
+    <div class="qa-question">Q: How does Kubernetes handle pod scheduling and what happens when resources are insufficient?</div>
+    <div class="qa-answer">A: The scheduler filters nodes by: resource requests (not limits) — node must have enough allocatable CPU/memory; node selectors/affinity rules; taints/tolerations; topology spread constraints. Then scores remaining nodes by resource utilization balance, image locality, etc. If no node fits, the pod enters <code>Pending</code> state with reason <code>Unschedulable</code>. Check: <code>kubectl describe pod &lt;pod&gt;</code> shows the scheduling failure reason. Solutions: scale up node group (Cluster Autoscaler fires if annotation is present), reduce resource requests, add node affinity overrides, or check if taints are blocking. Common issue: pods requesting more memory than any single node's allocatable capacity (always less than instance memory due to OS and daemon overhead).</div>
+  </div>
+
+  <div class="qa-block">
+    <div class="qa-question">Q: Explain how you would implement zero-downtime database schema migrations.</div>
+    <div class="qa-answer">A: Use the expand-contract pattern across 3 deployments: 1) Expand — add new column (nullable, no default required) — old and new code both work; 2) Migrate — backfill data in batches (<code>UPDATE ... WHERE id BETWEEN x AND y</code> to avoid lock contention), deploy new code that writes to both old and new column; 3) Contract — drop old column once all traffic uses new schema. Never: ALTER TABLE to add NOT NULL without default on large tables (locks entire table), rename columns without backward-compatible period, drop columns that active code reads. Use Flyway/Liquibase for versioned migrations and never run DDL in transactions on large tables in PostgreSQL — use <code>CREATE INDEX CONCURRENTLY</code> and <code>ADD COLUMN</code> + separate backfill.</div>
+  </div>
+
+  <div class="qa-block">
+    <div class="qa-question">Q: What is your approach to secrets management in a multi-environment Kubernetes setup?</div>
+    <div class="qa-answer">A: Never store secrets in Git, even encrypted base64. Use External Secrets Operator (ESO) to sync from AWS Secrets Manager or HashiCorp Vault into Kubernetes Secrets at runtime. ESO creates a <code>SecretStore</code> (credentials to access the secret backend) and <code>ExternalSecret</code> (what to fetch and where to put it). The actual secret values live only in Secrets Manager/Vault. For EKS: use IRSA so the ESO pod assumes an IAM role scoped to only read specific secrets. Rotate secrets automatically via Secrets Manager rotation — ESO re-syncs on next reconciliation (configurable interval). Seal Secrets (Bitnami) is an alternative for GitOps-friendly encrypted secrets, but requires your own key management.</div>
+  </div>
+
+  <div class="qa-block">
+    <div class="qa-question">Q: How do you handle multi-region disaster recovery with RTO/RPO requirements?</div>
+    <div class="qa-answer">A: Define targets first: RPO (max data loss) and RTO (max downtime). For RPO=0 (no data loss): active-active multi-region with synchronous replication — complex, expensive. For RPO &lt; 1min: Aurora Global Database with async cross-region replication (typically &lt;1s lag). For RTO=0: active-active with Route53 health checks and latency routing. For RTO=15min: pilot light — replicate data, pre-deploy minimal infra, use Terraform to scale up on failover. For RTO=1hr: warm standby — scaled-down version always running. For RTO=4hr: cold backup — restore from S3 snapshots. Practice: run DR drills quarterly, automate failover with runbooks, test that restored data is actually consistent and usable.</div>
+  </div>
+</section>
+
+<!-- ==================== COST OPTIMIZATION ==================== -->
+<section id="cost-optimization" class="section">
+  <h2>AWS Cost Optimization</h2>
+
+  <div class="diagram-box">
+    <strong>Cost Optimization Pillars</strong><br>
+    Right-sizing → Reserved/Savings Plans → Spot Instances → Storage tiering → Data transfer optimization
+  </div>
+
+  <h3>Practical Cost Reduction Strategies</h3>
+  <pre><code class="language-bash"># 1. Find oversized EC2 instances (Compute Optimizer)
+aws compute-optimizer get-ec2-instance-recommendations \
+  --filters name=Finding,values=Overprovisioned \
+  --query 'instanceRecommendations[*].{Instance:instanceArn,Current:currentInstanceType,Recommended:recommendationOptions[0].instanceType,Savings:recommendationOptions[0].estimatedMonthlySavings.value}' \
+  --output table
+
+# 2. Find unattached EBS volumes
+aws ec2 describe-volumes \
+  --filters Name=status,Values=available \
+  --query 'Volumes[*].{ID:VolumeId,Size:Size,Type:VolumeType,Created:CreateTime}' \
+  --output table
+
+# 3. Find idle RDS instances (< 1% CPU for 7 days)
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/RDS \
+  --metric-name CPUUtilization \
+  --statistics Average \
+  --period 604800 \
+  --start-time $(date -d '7 days ago' --iso-8601=seconds) \
+  --end-time $(date --iso-8601=seconds) \
+  --dimensions Name=DBInstanceIdentifier,Value=my-db
+
+# 4. EBS gp2 → gp3 migration (20% cheaper, better performance)
+aws ec2 modify-volume --volume-id vol-xxx --volume-type gp3
+
+# 5. Set S3 lifecycle rules (Terraform)
+resource "aws_s3_bucket_lifecycle_configuration" "example" {
+  bucket = aws_s3_bucket.logs.id
+  rule {
+    id     = "log-transition"
+    status = "Enabled"
+    transition {
+      days          = 30
+      storage_class = "STANDARD_IA"
+    }
+    transition {
+      days          = 90
+      storage_class = "GLACIER"
+    }
+    expiration {
+      days = 365
+    }
+  }
+}</code></pre>
+
+  <h3>Spot Instance Strategy for Kubernetes</h3>
+  <pre><code class="language-yaml"># eks-nodegroup-spot.yaml
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+metadata:
+  name: prod-cluster
+  region: us-east-1
+managedNodeGroups:
+  # On-demand for critical workloads
+  - name: critical-od
+    instanceType: m5.xlarge
+    minSize: 2
+    maxSize: 5
+    labels:
+      node-type: on-demand
+    taints:
+      - key: dedicated
+        value: critical
+        effect: NoSchedule
+
+  # Spot for batch/flexible workloads
+  - name: spot-workers
+    instanceTypes: [m5.xlarge, m5a.xlarge, m4.xlarge, m5d.xlarge, m5n.xlarge]
+    spot: true
+    minSize: 0
+    maxSize: 20
+    labels:
+      node-type: spot
+    taints:
+      - key: spot
+        value: "true"
+        effect: PreferNoSchedule</code></pre>
+  <pre><code class="language-yaml"># Pod that prefers spot but tolerates on-demand fallback
+spec:
+  tolerations:
+    - key: spot
+      operator: Equal
+      value: "true"
+      effect: PreferNoSchedule
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 80
+          preference:
+            matchExpressions:
+              - key: node-type
+                operator: In
+                values: [spot]</code></pre>
+
+  <div class="qa-block">
+    <div class="qa-question">Q: How do you approach FinOps — bringing cost visibility to engineering teams?</div>
+    <div class="qa-answer">A: Tag all resources with team, service, environment, and cost-center tags enforced via SCP (Service Control Policy) or AWS Config rule. Use AWS Cost Explorer with tag-based cost allocation reports. Feed costs into engineering dashboards (Grafana with CloudWatch billing metrics). Set per-team budget alerts in AWS Budgets with SNS notifications. Review monthly in engineering all-hands — make costs visible, not punitive. Effective approaches: show cost-per-request or cost-per-user metrics, not just absolute dollar amounts; celebrate cost reductions; include cost in PR reviews for infrastructure changes. Right-sizing is usually the biggest win — Compute Optimizer finds overprovisioned resources automatically.</div>
+  </div>
+</section>
+
+<!-- ==================== FINAL CHEAT SHEETS UPDATE ==================== -->
+<section id="cheat-kubectl" class="section">
+  <h2>kubectl Advanced Cheat Sheet</h2>
+
+  <pre><code class="language-bash"># Context & Auth
+kubectl config get-contexts
+kubectl config use-context prod-context
+kubectl config set-context --current --namespace=prod
+aws eks update-kubeconfig --name prod-cluster --region us-east-1
+
+# Debugging
+kubectl get events --sort-by=.lastTimestamp -n prod
+kubectl describe pod <pod> -n prod
+kubectl logs <pod> -c <container> --previous --tail=100
+kubectl exec -it <pod> -- /bin/sh
+kubectl port-forward svc/myservice 8080:80 -n prod
+kubectl top pods -n prod --sort-by=memory
+kubectl top nodes
+
+# Resource management
+kubectl get pods -o wide --show-labels
+kubectl get pods -l app=myapp,env=prod
+kubectl get all -n prod
+kubectl get pods --field-selector=status.phase=Running
+kubectl delete pods --field-selector=status.phase=Failed -n prod
+
+# Rollout management
+kubectl rollout status deployment/myapp
+kubectl rollout history deployment/myapp
+kubectl rollout undo deployment/myapp
+kubectl rollout undo deployment/myapp --to-revision=3
+kubectl set image deployment/myapp myapp=myapp:v2
+kubectl rollout restart deployment/myapp
+
+# Debugging network
+kubectl run debug --image=busybox --rm -it --restart=Never -- sh
+kubectl run debug --image=nicolaka/netshoot --rm -it --restart=Never -- bash
+# Inside pod:
+# nslookup kubernetes.default
+# curl http://myservice.prod.svc.cluster.local/health
+# wget -O- http://10.0.1.5:8080
+
+# Apply with dry run
+kubectl apply -f manifest.yaml --dry-run=server
+kubectl diff -f manifest.yaml
+
+# Patch
+kubectl patch deployment myapp -p '{"spec":{"replicas":5}}'
+kubectl patch node node1 -p '{"spec":{"unschedulable":true}}'
+
+# JSONPath queries
+kubectl get pods -o jsonpath='{.items[*].metadata.name}'
+kubectl get nodes -o jsonpath='{.items[*].status.addresses[?(@.type=="ExternalIP")].address}'
+
+# Drain & cordon (node maintenance)
+kubectl cordon node1          # Mark unschedulable
+kubectl drain node1 --ignore-daemonsets --delete-emptydir-data --grace-period=300
+kubectl uncordon node1
+
+# Force delete stuck namespace
+kubectl get namespace stuck-ns -o json | jq '.spec.finalizers = []' | kubectl replace --raw "/api/v1/namespaces/stuck-ns/finalize" -f -</code></pre>
+</section>
 
 </main>
 </div>
