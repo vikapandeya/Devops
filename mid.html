@@ -174,7 +174,7 @@ tr:nth-child(even) td{background:rgba(255,255,255,.02)}
       </div>
     </nav>
     <div class="progress-info">
-      <span id="progress-text">0 of 10 topics completed</span>
+      <span id="progress-text">0 of 14 topics completed</span>
       <div class="progress-bar-inner"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
     </div>
   </aside>
@@ -205,6 +205,10 @@ tr:nth-child(even) td{background:rgba(255,255,255,.02)}
       <button class="filter-btn" data-filter="terraform">Terraform</button>
       <button class="filter-btn" data-filter="ansible">Ansible</button>
       <button class="filter-btn" data-filter="monitoring">Monitoring</button>
+      <button class="filter-btn" data-filter="helm">Helm</button>
+      <button class="filter-btn" data-filter="gitops">GitOps</button>
+      <button class="filter-btn" data-filter="nginx">Nginx</button>
+      <button class="filter-btn" data-filter="ecs">ECS/Fargate</button>
       <button class="filter-btn" data-filter="projects">Projects</button>
       <button class="filter-btn" data-filter="interview">Interview</button>
     </div>
@@ -832,7 +836,375 @@ ansible-playbook deploy.yml --vault-password-file ~/.vault_pass
       </div>
     </div>
 
-    <!-- G. MONITORING -->
+
+    <!-- G. HELM -->
+    <div class="section" id="helm" data-topic="helm">
+      <div class="section-header">
+        <div class="section-title-row"><span class="section-icon">⎈</span><h2>G. Helm — Kubernetes Package Manager</h2></div>
+        <div class="section-meta"><span class="tag">K8s Tools</span><span class="reading-time">⏱ ~35 min</span><label class="check-label"><input type="checkbox" class="topic-check" data-topic="helm"> Done</label></div>
+      </div>
+      <div class="section-body">
+        <div class="note">💡 Helm is the "apt/npm" for Kubernetes. It packages K8s manifests into versioned, configurable charts. Used in ~80% of K8s deployments.</div>
+
+        <h3>Helm Core Concepts</h3>
+        <table>
+          <tr><th>Term</th><th>Meaning</th></tr>
+          <tr><td>Chart</td><td>Package of K8s manifests + default values (like a npm package)</td></tr>
+          <tr><td>Release</td><td>Running instance of a chart installed in a cluster</td></tr>
+          <tr><td>Repository</td><td>Remote collection of charts (like npm registry)</td></tr>
+          <tr><td>Values</td><td>YAML config that overrides chart defaults per environment</td></tr>
+          <tr><td>Template</td><td>Go template files that render into K8s YAML using values</td></tr>
+        </table>
+
+        <h3>Essential Helm Commands</h3>
+        <div class="pre-wrap"><pre><code># Add a chart repository
+helm repo add stable https://charts.helm.sh/stable
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm repo update
+
+# Search for charts
+helm search repo nginx
+helm search hub wordpress          # search Artifact Hub (public)
+
+# Install a chart
+helm install my-nginx bitnami/nginx                     # with defaults
+helm install my-nginx bitnami/nginx -f values.yaml      # with custom values
+helm install my-nginx bitnami/nginx --set replicaCount=3  # inline override
+helm install my-nginx bitnami/nginx -n production        # in namespace
+
+# Manage releases
+helm list -A                        # all releases all namespaces
+helm status my-nginx                # status of release
+helm get values my-nginx            # currently set values
+helm history my-nginx               # revision history
+
+# Upgrade and rollback
+helm upgrade my-nginx bitnami/nginx --reuse-values -f prod-values.yaml
+helm rollback my-nginx 2            # rollback to revision 2
+
+# Uninstall
+helm uninstall my-nginx -n production</code></pre>
+          <span class="lang-label">bash</span><button class="copy-btn">Copy</button></div>
+
+        <h3>Create Your Own Helm Chart</h3>
+        <div class="pre-wrap"><pre><code">helm create myapp
+# Creates:
+# myapp/
+# ├── Chart.yaml          # chart metadata
+# ├── values.yaml         # default values
+# └── templates/
+#     ├── deployment.yaml
+#     ├── service.yaml
+#     ├── ingress.yaml
+#     └── _helpers.tpl    # reusable template functions
+
+# templates/deployment.yaml (excerpt)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "myapp.fullname" . }}
+  labels:
+    {{- include "myapp.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    spec:
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        ports:
+        - containerPort: {{ .Values.service.port }}
+
+# values.yaml
+replicaCount: 2
+image:
+  repository: myregistry/myapp
+  tag: ""               # empty = uses Chart.AppVersion
+service:
+  type: ClusterIP
+  port: 3000
+
+# values-production.yaml (overrides for prod)
+replicaCount: 5
+image:
+  tag: "1.5.2"
+resources:
+  limits: { cpu: 1, memory: 1Gi }
+
+# Deploy to production
+helm upgrade --install myapp ./myapp -f values-production.yaml -n production</code></pre>
+          <span class="lang-label">yaml</span><button class="copy-btn">Copy</button></div>
+      </div>
+    </div>
+
+    <!-- H. GITOPS -->
+    <div class="section" id="gitops" data-topic="gitops">
+      <div class="section-header">
+        <div class="section-title-row"><span class="section-icon">🔄</span><h2>H. GitOps with ArgoCD</h2></div>
+        <div class="section-meta"><span class="tag">GitOps</span><span class="reading-time">⏱ ~40 min</span><label class="check-label"><input type="checkbox" class="topic-check" data-topic="gitops"> Done</label></div>
+      </div>
+      <div class="section-body">
+        <div class="tip">🔑 GitOps = Git is the single source of truth for cluster state. No manual kubectl apply in production. ArgoCD watches Git and syncs automatically.</div>
+
+        <h3>GitOps vs Traditional CI/CD</h3>
+        <table>
+          <tr><th>Traditional (Push)</th><th>GitOps (Pull)</th></tr>
+          <tr><td>CI pipeline runs kubectl apply</td><td>ArgoCD polls Git, pulls changes</td></tr>
+          <tr><td>Pipeline needs cluster credentials</td><td>ArgoCD runs inside cluster — no external access</td></tr>
+          <tr><td>Drift goes undetected</td><td>ArgoCD detects and can auto-fix drift</td></tr>
+          <tr><td>Rollback = re-run old pipeline</td><td>Rollback = git revert (instant)</td></tr>
+          <tr><td>No audit trail beyond CI logs</td><td>Full audit trail in Git history</td></tr>
+        </table>
+
+        <h3>ArgoCD Application Setup</h3>
+        <div class="pre-wrap"><pre><code"># Install ArgoCD
+kubectl create namespace argocd
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+# Get admin password
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+
+# Create an Application
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: webapp-production
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/myorg/k8s-configs.git
+    targetRevision: main
+    path: apps/webapp/production         # folder in git repo
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: production
+  syncPolicy:
+    automated:
+      prune: true        # delete resources removed from Git
+      selfHeal: true     # fix drift automatically
+    syncOptions:
+    - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        maxDuration: 3m</code></pre>
+          <span class="lang-label">yaml</span><button class="copy-btn">Copy</button></div>
+
+        <h3>GitOps Repository Structure</h3>
+        <div class="pre-wrap"><pre><code"># Recommended: separate repos for app code and config
+k8s-configs/                    ← GitOps config repo
+├── apps/
+│   ├── webapp/
+│   │   ├── base/               # Kustomize base or Helm chart
+│   │   │   ├── deployment.yaml
+│   │   │   └── kustomization.yaml
+│   │   ├── staging/
+│   │   │   └── kustomization.yaml  # patches for staging
+│   │   └── production/
+│   │       └── kustomization.yaml  # patches for production
+│   └── api/
+│       └── ...
+└── infrastructure/
+    ├── cert-manager/           # ArgoCD App for cert-manager
+    ├── ingress-nginx/          # ArgoCD App for ingress
+    └── monitoring/             # ArgoCD App for Prometheus stack
+
+# CI pipeline only updates image tag in config repo:
+# git commit -m "ci: update webapp image to sha-abc123"
+# ← ArgoCD picks this up and deploys automatically</code></pre>
+          <span class="lang-label">bash</span><button class="copy-btn">Copy</button></div>
+      </div>
+    </div>
+
+    <!-- I. NGINX -->
+    <div class="section" id="nginx-proxy" data-topic="nginx">
+      <div class="section-header">
+        <div class="section-title-row"><span class="section-icon">🌐</span><h2>I. Nginx — Reverse Proxy & Load Balancer</h2></div>
+        <div class="section-meta"><span class="tag">Networking</span><span class="reading-time">⏱ ~30 min</span><label class="check-label"><input type="checkbox" class="topic-check" data-topic="nginx"> Done</label></div>
+      </div>
+      <div class="section-body">
+        <h3>Nginx as Reverse Proxy</h3>
+        <div class="pre-wrap"><pre><code"># /etc/nginx/sites-available/myapp.conf
+
+server {
+    listen 80;
+    server_name app.example.com;
+    return 301 https://$host$request_uri;    # redirect HTTP → HTTPS
+}
+
+server {
+    listen 443 ssl http2;
+    server_name app.example.com;
+
+    ssl_certificate     /etc/letsencrypt/live/app.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/app.example.com/privkey.pem;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_ciphers         HIGH:!aNULL:!MD5;
+
+    # Gzip compression
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript;
+
+    # Proxy to Node.js app
+    location / {
+        proxy_pass         http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header   Upgrade $http_upgrade;
+        proxy_set_header   Connection 'upgrade';
+        proxy_set_header   Host $host;
+        proxy_set_header   X-Real-IP $remote_addr;
+        proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # Serve static files directly (bypass app server)
+    location /static/ {
+        alias /var/www/myapp/static/;
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Rate limiting
+    limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
+    location /api/ {
+        limit_req zone=api burst=20 nodelay;
+        proxy_pass http://127.0.0.1:3000;
+    }
+}
+</code></pre>
+          <span class="lang-label">nginx</span><button class="copy-btn">Copy</button></div>
+
+        <h3>Nginx Load Balancing</h3>
+        <div class="pre-wrap"><pre><code"># Upstream block — define backend servers
+upstream webapp_backend {
+    least_conn;                    # algorithm: least connections
+    # round_robin (default), ip_hash, least_conn, random
+
+    server 10.0.1.10:3000 weight=3;    # gets 3x more traffic
+    server 10.0.1.11:3000 weight=1;
+    server 10.0.1.12:3000 backup;     # only used if others fail
+
+    keepalive 32;                  # persistent connections to backends
+}
+
+server {
+    listen 80;
+    location / {
+        proxy_pass http://webapp_backend;
+    }
+}
+</code></pre>
+          <span class="lang-label">nginx</span><button class="copy-btn">Copy</button></div>
+
+        <h3>Essential Nginx Commands</h3>
+        <div class="pre-wrap"><pre><code">sudo nginx -t              # test config syntax (always run before reload)
+sudo nginx -s reload       # reload config without downtime
+sudo systemctl restart nginx
+sudo nginx -s stop
+
+# Logs
+tail -f /var/log/nginx/access.log
+tail -f /var/log/nginx/error.log
+
+# Enable a site
+sudo ln -s /etc/nginx/sites-available/myapp.conf /etc/nginx/sites-enabled/
+sudo nginx -t && sudo nginx -s reload</code></pre>
+          <span class="lang-label">bash</span><button class="copy-btn">Copy</button></div>
+      </div>
+    </div>
+
+    <!-- J. ECS/FARGATE -->
+    <div class="section" id="ecs" data-topic="ecs">
+      <div class="section-header">
+        <div class="section-title-row"><span class="section-icon">🐳</span><h2>J. AWS ECS / Fargate</h2></div>
+        <div class="section-meta"><span class="tag">Cloud Native</span><span class="reading-time">⏱ ~35 min</span><label class="check-label"><input type="checkbox" class="topic-check" data-topic="ecs"> Done</label></div>
+      </div>
+      <div class="section-body">
+        <div class="note">💡 ECS (Elastic Container Service) is AWS's managed container platform. Fargate removes the need to manage EC2 nodes — you pay per container, not per server.</div>
+
+        <h3>ECS vs EKS vs Fargate</h3>
+        <table>
+          <tr><th>Feature</th><th>ECS + EC2</th><th>ECS + Fargate</th><th>EKS</th></tr>
+          <tr><td>Manage nodes</td><td>You manage EC2</td><td>No servers to manage</td><td>You manage nodes (or use Fargate)</td></tr>
+          <tr><td>Cost</td><td>Predictable (EC2)</td><td>Pay per task (vCPU/mem)</td><td>EC2 + $0.10/hr control plane</td></tr>
+          <tr><td>Complexity</td><td>Medium</td><td>Low</td><td>High</td></tr>
+          <tr><td>Best for</td><td>Cost-sensitive, steady load</td><td>Spiky/batch workloads</td><td>Complex microservices, K8s ecosystem</td></tr>
+        </table>
+
+        <h3>ECS Task Definition</h3>
+        <div class="pre-wrap"><pre><code">{
+  "family": "webapp",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::123456789:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::123456789:role/ecsTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "webapp",
+      "image": "123456789.dkr.ecr.us-east-1.amazonaws.com/webapp:1.0",
+      "portMappings": [
+        { "containerPort": 3000, "protocol": "tcp" }
+      ],
+      "environment": [
+        { "name": "NODE_ENV", "value": "production" }
+      ],
+      "secrets": [
+        { "name": "DB_PASSWORD", "valueFrom": "arn:aws:secretsmanager:us-east-1:123:secret:prod/db/password" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/webapp",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "healthCheck": {
+        "command": ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3
+      }
+    }
+  ]
+}
+</code></pre>
+          <span class="lang-label">json</span><button class="copy-btn">Copy</button></div>
+
+        <h3>Deploy with Terraform (ECS Service)</h3>
+        <div class="pre-wrap"><pre><code">resource "aws_ecs_service" "webapp" {
+  name            = "webapp"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.webapp.arn
+  desired_count   = 2
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets          = aws_subnet.private[*].id
+    security_groups  = [aws_security_group.ecs_tasks.id]
+    assign_public_ip = false
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.webapp.arn
+    container_name   = "webapp"
+    container_port   = 3000
+  }
+
+  deployment_circuit_breaker {
+    enable   = true
+    rollback = true     # auto-rollback on failed deployment
+  }
+}</code></pre>
+          <span class="lang-label">hcl</span><button class="copy-btn">Copy</button></div>
+      </div>
+    </div>
+
+    <!-- K. MONITORING -->
     <div class="section" id="monitoring" data-topic="monitoring">
       <div class="section-header">
         <div class="section-title-row"><span class="section-icon">📊</span><h2>G. Monitoring & Observability</h2></div>

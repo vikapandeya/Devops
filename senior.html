@@ -164,13 +164,17 @@ tr:nth-child(even) td{background:rgba(255,255,255,.02)}
       </div>
       <div class="toc-group">
         <div class="toc-group-title">Leadership</div>
-        <a href="#architecture"><span class="toc-dot"></span>H. Architecture Decisions</a>
+        <a href="#otel"><span class="toc-dot"></span>H. OpenTelemetry</a>
+        <a href="#chaos"><span class="toc-dot"></span>I. Chaos Engineering</a>
+        <a href="#platform-eng"><span class="toc-dot"></span>J. Platform Engineering</a>
+        <a href="#compliance"><span class="toc-dot"></span>K. Compliance &amp; Governance</a>
+        <a href="#architecture"><span class="toc-dot"></span>L. Architecture Decisions</a>
         <a href="#projects"><span class="toc-dot"></span>Projects (9–12)</a>
         <a href="#interview"><span class="toc-dot"></span>Senior Interview Prep</a>
       </div>
     </nav>
     <div class="progress-info">
-      <span id="progress-text">0 of 10 topics completed</span>
+      <span id="progress-text">0 of 14 topics completed</span>
       <div class="progress-bar-inner"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
     </div>
   </aside>
@@ -200,6 +204,10 @@ tr:nth-child(even) td{background:rgba(255,255,255,.02)}
       <button class="filter-btn" data-filter="kubernetes">K8s Advanced</button>
       <button class="filter-btn" data-filter="serverless">Serverless</button>
       <button class="filter-btn" data-filter="cost">Cost Ops</button>
+      <button class="filter-btn" data-filter="observability">OTel</button>
+      <button class="filter-btn" data-filter="chaos">Chaos Eng</button>
+      <button class="filter-btn" data-filter="platform">Platform Eng</button>
+      <button class="filter-btn" data-filter="compliance">Compliance</button>
       <button class="filter-btn" data-filter="projects">Projects</button>
       <button class="filter-btn" data-filter="interview">Interview</button>
     </div>
@@ -824,10 +832,321 @@ spec:
       </div>
     </div>
 
-    <!-- H. ARCHITECTURE DECISIONS -->
+    <!-- H. OTEL -->
+    <div class="section" id="otel" data-topic="observability">
+      <div class="section-header">
+        <div class="section-title-row"><span class="section-icon">🔭</span><h2>H. OpenTelemetry — Modern Observability</h2></div>
+        <div class="section-meta"><span class="tag">Observability</span><span class="reading-time">⏱ ~40 min</span><label class="check-label"><input type="checkbox" class="topic-check" data-topic="otel"> Done</label></div>
+      </div>
+      <div class="section-body">
+        <div class="note">💡 OpenTelemetry (OTel) is the CNCF standard for instrumentation — vendor-neutral collection of traces, metrics, and logs. Replacing proprietary APM agents at scale.</div>
+
+        <h3>OTel Architecture</h3>
+        <div class="diagram-box">App (instrumented with OTel SDK)
+  │ traces + metrics + logs
+  ▼
+OTel Collector (sidecar or daemonset)
+  │ receive → process → export
+  ├──► Jaeger (traces)
+  ├──► Prometheus (metrics)
+  └──► Loki / Elasticsearch (logs)
+
+No vendor lock-in — swap backends without changing app code</div>
+
+        <h3>Auto-Instrumentation in Node.js</h3>
+        <div class="pre-wrap"><pre><code>// instrumentation.js — add before anything else
+const { NodeSDK } = require('@opentelemetry/sdk-node');
+const { getNodeAutoInstrumentations } = require('@opentelemetry/auto-instrumentations-node');
+const { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-http');
+const { PrometheusExporter } = require('@opentelemetry/exporter-prometheus');
+const { Resource } = require('@opentelemetry/resources');
+
+const sdk = new NodeSDK({
+  resource: new Resource({
+    'service.name': 'webapp',
+    'service.version': process.env.APP_VERSION,
+    'deployment.environment': process.env.NODE_ENV,
+  }),
+  traceExporter: new OTLPTraceExporter({
+    url: 'http://otel-collector:4318/v1/traces',
+  }),
+  metricReader: new PrometheusExporter({ port: 9464 }),
+  instrumentations: [
+    getNodeAutoInstrumentations({
+      '@opentelemetry/instrumentation-http': { enabled: true },
+      '@opentelemetry/instrumentation-express': { enabled: true },
+      '@opentelemetry/instrumentation-pg': { enabled: true },
+    }),
+  ],
+});
+
+sdk.start();</code></pre>
+          <span class="lang-label">javascript</span><button class="copy-btn">Copy</button></div>
+
+        <h3>OTel Collector Config (Kubernetes)</h3>
+        <div class="pre-wrap"><pre><code># otel-collector-config.yaml
+receivers:
+  otlp:
+    protocols:
+      grpc: { endpoint: 0.0.0.0:4317 }
+      http: { endpoint: 0.0.0.0:4318 }
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 400
+  resource:
+    attributes:
+    - action: insert
+      key: cluster.name
+      value: production
+
+exporters:
+  otlp/jaeger:
+    endpoint: jaeger-collector:4317
+    tls: { insecure: true }
+  prometheusremotewrite:
+    endpoint: http://prometheus:9090/api/v1/write
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch, resource]
+      exporters: [otlp/jaeger]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [prometheusremotewrite]</code></pre>
+          <span class="lang-label">yaml</span><button class="copy-btn">Copy</button></div>
+      </div>
+    </div>
+    <!-- I. CHAOS ENGINEERING -->
+    <div class="section" id="chaos" data-topic="chaos">
+      <div class="section-header">
+        <div class="section-title-row"><span class="section-icon">💥</span><h2>I. Chaos Engineering</h2></div>
+        <div class="section-meta"><span class="tag">Reliability</span><span class="reading-time">⏱ ~35 min</span><label class="check-label"><input type="checkbox" class="topic-check" data-topic="chaos"> Done</label></div>
+      </div>
+      <div class="section-body">
+        <div class="warn">⚠ Always start experiments in staging with a small blast radius. Define rollback criteria before you start.</div>
+
+        <h3>Chaos Engineering Principles</h3>
+        <table>
+          <tr><th>Step</th><th>Description</th></tr>
+          <tr><td>1. Define Steady State</td><td>Baseline: error rate &lt;0.1%, P99 &lt;300ms, all pods Running</td></tr>
+          <tr><td>2. Hypothesize</td><td>"If pod X fails, load balancer routes to Y within 5s"</td></tr>
+          <tr><td>3. Inject Failure</td><td>Kill pods, add latency, drain a node, block network</td></tr>
+          <tr><td>4. Observe</td><td>Does system degrade gracefully? Does alert fire? What breaks?</td></tr>
+          <tr><td>5. Fix & Repeat</td><td>Harden the weakness, run experiment again to verify</td></tr>
+        </table>
+
+        <h3>Chaos Mesh — Kubernetes Chaos</h3>
+        <div class="pre-wrap"><pre><code>helm repo add chaos-mesh https://charts.chaos-mesh.org
+helm install chaos-mesh chaos-mesh/chaos-mesh -n chaos-testing --create-namespace
+
+# Kill 30% of webapp pods every hour
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: kill-webapp-pods
+spec:
+  action: pod-kill
+  mode: fixed-percent
+  value: "30"
+  duration: 2m
+  selector:
+    namespaces: [production]
+    labelSelectors:
+      app: webapp
+  scheduler:
+    cron: "@every 1h"
+
+---
+# Add 100ms network delay to incoming traffic
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: network-delay
+spec:
+  action: delay
+  mode: all
+  selector:
+    namespaces: [production]
+    labelSelectors:
+      app: webapp
+  delay:
+    latency: "100ms"
+    jitter: "20ms"
+  direction: to
+  duration: 5m</code></pre>
+          <span class="lang-label">yaml</span><button class="copy-btn">Copy</button></div>
+
+        <h3>Game Days — Planned Chaos</h3>
+        <table>
+          <tr><th>Scenario</th><th>What to test</th><th>Expected outcome</th></tr>
+          <tr><td>Kill primary DB</td><td>Failover to replica</td><td>&lt;30s failover, no data loss</td></tr>
+          <tr><td>Lose one AZ</td><td>Traffic reroutes to healthy AZ</td><td>&lt;60s, ALB health checks kick in</td></tr>
+          <tr><td>Deploy bad image</td><td>Rollback speed</td><td>&lt;5min to detect &amp; revert</td></tr>
+          <tr><td>CPU spike to 100%</td><td>HPA scales out</td><td>New pods up within 3 min</td></tr>
+          <tr><td>On-call engineer unavailable</td><td>Escalation path works</td><td>Backup notified within 10min</td></tr>
+        </table>
+      </div>
+    </div>
+    <!-- J. PLATFORM ENGINEERING -->
+    <div class="section" id="platform-eng" data-topic="platform">
+      <div class="section-header">
+        <div class="section-title-row"><span class="section-icon">🏗</span><h2>J. Platform Engineering &amp; Internal Developer Platform</h2></div>
+        <div class="section-meta"><span class="tag">Leadership</span><span class="reading-time">⏱ ~35 min</span><label class="check-label"><input type="checkbox" class="topic-check" data-topic="platform"> Done</label></div>
+      </div>
+      <div class="section-body">
+        <div class="note">💡 Platform Engineering builds the "paved road" — golden paths that let dev teams self-serve infrastructure without needing to understand every underlying tool.</div>
+
+        <h3>DevOps vs Platform Engineering</h3>
+        <table>
+          <tr><th>DevOps (You Build It, You Run It)</th><th>Platform Engineering</th></tr>
+          <tr><td>Every team owns their own pipeline</td><td>Platform team provides shared templates</td></tr>
+          <tr><td>High cognitive load on dev teams</td><td>Reduced via abstractions (Backstage, CRDs)</td></tr>
+          <tr><td>Inconsistent security posture</td><td>Guardrails baked into the platform</td></tr>
+          <tr><td>Manual compliance processes</td><td>Compliance as code — auto-enforced</td></tr>
+          <tr><td>10+ tools, 10+ configs to learn</td><td>One portal (Backstage) for everything</td></tr>
+        </table>
+
+        <h3>IDP Stack</h3>
+        <div class="diagram-box">Developer Portal: Backstage (catalog, docs, scaffolding)
+  ↓
+CI/CD: GitHub Actions templates + ArgoCD (GitOps)
+  ↓
+Infra Abstraction: Crossplane / Terraform Cloud
+  ↓
+Runtime: EKS + Karpenter + Kyverno policies
+  ↓
+Observability: OTel Collector → Grafana stack</div>
+
+        <h3>Backstage Service Catalog Entry</h3>
+        <div class="pre-wrap"><pre><code># catalog-info.yaml — add to every service repo root
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: webapp
+  description: Customer-facing web application
+  annotations:
+    github.com/project-slug: myorg/webapp
+    backstage.io/techdocs-ref: dir:.
+  tags: [nodejs, production, tier-1]
+  links:
+  - url: https://grafana.company.com/d/webapp
+    title: Grafana Dashboard
+  - url: https://argocd.company.com/applications/webapp
+    title: ArgoCD
+spec:
+  type: service
+  lifecycle: production
+  owner: team-platform
+  system: e-commerce
+  dependsOn: [component:postgres, component:redis]
+  providesApis: [webapp-api]</code></pre>
+          <span class="lang-label">yaml</span><button class="copy-btn">Copy</button></div>
+
+        <h3>Golden Path — What a New Service Gets in &lt;10 Minutes</h3>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:.4rem;margin-top:.5rem">
+          <li style="font-size:.85rem;color:var(--text3);padding:.3rem 0;border-bottom:1px solid var(--border)">✅ GitHub repo with CI/CD pipeline (lint → test → build → scan → push)</li>
+          <li style="font-size:.85rem;color:var(--text3);padding:.3rem 0;border-bottom:1px solid var(--border)">✅ Helm chart pre-configured with org resource limits &amp; security context</li>
+          <li style="font-size:.85rem;color:var(--text3);padding:.3rem 0;border-bottom:1px solid var(--border)">✅ ArgoCD Application targeting staging namespace</li>
+          <li style="font-size:.85rem;color:var(--text3);padding:.3rem 0;border-bottom:1px solid var(--border)">✅ Grafana dashboard from template (golden signals pre-wired)</li>
+          <li style="font-size:.85rem;color:var(--text3);padding:.3rem 0;border-bottom:1px solid var(--border)">✅ PagerDuty service + escalation policy registered</li>
+          <li style="font-size:.85rem;color:var(--text3);padding:.3rem 0">✅ Backstage catalog entry + TechDocs skeleton</li>
+        </ul>
+      </div>
+    </div>
+    <!-- K. COMPLIANCE -->
+    <div class="section" id="compliance" data-topic="compliance">
+      <div class="section-header">
+        <div class="section-title-row"><span class="section-icon">📋</span><h2>K. Compliance &amp; Governance</h2></div>
+        <div class="section-meta"><span class="tag">Security</span><span class="reading-time">⏱ ~30 min</span><label class="check-label"><input type="checkbox" class="topic-check" data-topic="compliance"> Done</label></div>
+      </div>
+      <div class="section-body">
+        <h3>Key Compliance Standards</h3>
+        <table>
+          <tr><th>Standard</th><th>Who needs it</th><th>Key DevOps requirements</th></tr>
+          <tr><td><strong>SOC 2</strong></td><td>SaaS companies with customer data</td><td>Audit logging, access control, change management, encryption</td></tr>
+          <tr><td><strong>PCI DSS</strong></td><td>Companies handling credit cards</td><td>Network segmentation, no card data in logs, quarterly scans</td></tr>
+          <tr><td><strong>HIPAA</strong></td><td>US healthcare data (PHI)</td><td>PHI encryption, access logs, Business Associate Agreements</td></tr>
+          <tr><td><strong>GDPR</strong></td><td>EU user personal data</td><td>Data deletion, consent tracking, breach notification &lt;72h</td></tr>
+          <tr><td><strong>ISO 27001</strong></td><td>Enterprise security certification</td><td>ISMS, risk management, ongoing audit trails</td></tr>
+        </table>
+
+        <h3>Compliance as Code — AWS Config + Terraform</h3>
+        <div class="pre-wrap"><pre><code># Enforce S3 encryption on all buckets
+resource "aws_config_config_rule" "s3_encryption" {
+  name = "s3-bucket-server-side-encryption-enabled"
+  source {
+    owner             = "AWS"
+    source_identifier = "S3_BUCKET_SERVER_SIDE_ENCRYPTION_ENABLED"
+  }
+}
+
+# Block all public S3 buckets
+resource "aws_config_config_rule" "no_public_s3" {
+  name = "s3-bucket-public-read-prohibited"
+  source {
+    owner             = "AWS"
+    source_identifier = "S3_BUCKET_PUBLIC_READ_PROHIBITED"
+  }
+}
+
+# Require MFA for IAM console access
+resource "aws_config_config_rule" "mfa_enabled" {
+  name = "mfa-enabled-for-iam-console-access"
+  source {
+    owner             = "AWS"
+    source_identifier = "MFA_ENABLED_FOR_IAM_CONSOLE_ACCESS"
+  }
+}</code></pre>
+          <span class="lang-label">hcl</span><button class="copy-btn">Copy</button></div>
+
+        <h3>CloudTrail — Full Audit Log</h3>
+        <div class="pre-wrap"><pre><code>resource "aws_cloudtrail" "main" {
+  name                          = "production-audit"
+  s3_bucket_name                = aws_s3_bucket.audit_logs.id
+  include_global_service_events = true
+  is_multi_region_trail         = true
+  enable_log_file_validation    = true   # tamper detection
+
+  event_selector {
+    read_write_type           = "All"
+    include_management_events = true
+  }
+}
+
+# Critical events to alert on:
+# ✗ Root account login
+# ✗ IAM policy changes
+# ✗ Security group changes
+# ✗ CloudTrail disabled/stopped
+# ✗ MFA device removed from IAM user
+# ✗ S3 bucket policy made public</code></pre>
+          <span class="lang-label">hcl</span><button class="copy-btn">Copy</button></div>
+
+        <h3>SOC 2 DevOps Checklist</h3>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:.4rem;margin-top:.5rem">
+          <li style="font-size:.85rem;color:var(--text3);padding:.3rem 0;border-bottom:1px solid var(--border)">✓ All prod changes via PR with ≥1 approver — no direct commits to main</li>
+          <li style="font-size:.85rem;color:var(--text3);padding:.3rem 0;border-bottom:1px solid var(--border)">✓ Access provisioned via IaC only (no manual console IAM changes)</li>
+          <li style="font-size:.85rem;color:var(--text3);padding:.3rem 0;border-bottom:1px solid var(--border)">✓ All secrets in Vault or Secrets Manager — never in code or CI env vars in plaintext</li>
+          <li style="font-size:.85rem;color:var(--text3);padding:.3rem 0;border-bottom:1px solid var(--border)">✓ Encryption at rest (RDS, S3, EBS) and in transit (TLS 1.2+) everywhere</li>
+          <li style="font-size:.85rem;color:var(--text3);padding:.3rem 0;border-bottom:1px solid var(--border)">✓ Centralised logging with 1-year retention, tamper-evident</li>
+          <li style="font-size:.85rem;color:var(--text3);padding:.3rem 0;border-bottom:1px solid var(--border)">✓ MFA required for all human access to production systems</li>
+          <li style="font-size:.85rem;color:var(--text3);padding:.3rem 0">✓ Quarterly vulnerability scans, annual penetration test</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- L. ARCHITECTURE DECISIONS -->
     <div class="section" id="architecture" data-topic="architecture">
       <div class="section-header">
-        <div class="section-title-row"><span class="section-icon">🧠</span><h2>H. Architecture Decision Records (ADR)</h2></div>
+        <div class="section-title-row"><span class="section-icon">🧠</span><h2>L. Architecture Decision Records (ADR)</h2></div>
         <div class="section-meta"><span class="tag">Leadership</span><span class="reading-time">⏱ ~25 min</span><label class="check-label"><input type="checkbox" class="topic-check" data-topic="architecture"> Done</label></div>
       </div>
       <div class="section-body">

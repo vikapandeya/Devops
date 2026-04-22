@@ -324,7 +324,9 @@ tr:nth-child(even) td{background:rgba(255,255,255,.02)}
       </div>
       <div class="toc-group">
         <div class="toc-group-title">Containers & Automation</div>
-        <a href="#docker-basics"><span class="toc-dot"></span>D. Docker Basics</a>
+        <a href="#ssh"><span class="toc-dot"></span>D. SSH & Key Management</a>
+        <a href="#yaml"><span class="toc-dot"></span>E. YAML Basics</a>
+        <a href="#docker-basics"><span class="toc-dot"></span>F. Docker Basics</a>
         <a href="#cicd-basics"><span class="toc-dot"></span>E. CI/CD Introduction</a>
       </div>
       <div class="toc-group">
@@ -335,7 +337,7 @@ tr:nth-child(even) td{background:rgba(255,255,255,.02)}
       </div>
     </nav>
     <div class="progress-info">
-      <span id="progress-text">0 of 9 topics completed</span>
+      <span id="progress-text">0 of 11 topics completed</span>
       <div class="progress-bar-inner"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
     </div>
   </aside>
@@ -367,6 +369,8 @@ tr:nth-child(even) td{background:rgba(255,255,255,.02)}
       <button class="filter-btn" data-filter="git">Git</button>
       <button class="filter-btn" data-filter="docker">Docker</button>
       <button class="filter-btn" data-filter="cicd">CI/CD</button>
+      <button class="filter-btn" data-filter="ssh">SSH</button>
+      <button class="filter-btn" data-filter="yaml">YAML</button>
       <button class="filter-btn" data-filter="projects">Projects</button>
       <button class="filter-btn" data-filter="interview">Interview</button>
     </div>
@@ -672,12 +676,197 @@ git commit -m "fix: resolve login attempts conflict"
       </div>
     </div>
 
-    <!-- ── D. DOCKER BASICS ── -->
+
+    <!-- ── D. SSH ── -->
+    <div class="section" id="ssh" data-topic="ssh">
+      <div class="section-header">
+        <div class="section-title-row">
+          <span class="section-icon">🔑</span>
+          <h2>D. SSH & Key Management</h2>
+        </div>
+        <div class="section-meta">
+          <span class="tag">Security</span>
+          <span class="reading-time">⏱ ~25 min</span>
+          <label class="check-label"><input type="checkbox" class="topic-check" data-topic="ssh"> Done</label>
+        </div>
+      </div>
+      <div class="section-body">
+        <div class="note">💡 SSH is how you securely access every server, cloud VM, and remote system. Master this before touching Docker or CI/CD.</div>
+
+        <h3>SSH Key Setup (Do This Once)</h3>
+        <div class="pre-wrap"><pre><code># 1. Generate a key pair (Ed25519 is modern and secure)
+ssh-keygen -t ed25519 -C "your@email.com"
+# ► Saves private key: ~/.ssh/id_ed25519   (NEVER share this)
+# ► Saves public key:  ~/.ssh/id_ed25519.pub (share this freely)
+
+# 2. View your public key (paste this into servers/GitHub)
+cat ~/.ssh/id_ed25519.pub
+
+# 3. Copy public key to a remote server
+ssh-copy-id -i ~/.ssh/id_ed25519.pub user@192.168.1.100
+# Or manually: append to ~/.ssh/authorized_keys on the server
+
+# 4. Connect to server
+ssh user@192.168.1.100                    # default port 22
+ssh -p 2222 user@192.168.1.100            # custom port
+ssh -i ~/.ssh/id_ed25519 user@server.com  # specify key
+
+# 5. SSH config file — shortcuts
+# ~/.ssh/config
+Host myserver
+    HostName 192.168.1.100
+    User ubuntu
+    IdentityFile ~/.ssh/id_ed25519
+    Port 22
+
+ssh myserver   # now this is all you need to type!</code></pre>
+          <span class="lang-label">bash</span><button class="copy-btn">Copy</button></div>
+
+        <h3>SSH Tunneling & Port Forwarding</h3>
+        <div class="pre-wrap"><pre><code># Local port forward — access remote service locally
+# Access remote DB (port 5432) as if it's on localhost:5433
+ssh -L 5433:localhost:5432 user@server.com
+
+# Remote port forward — expose local service to remote server
+ssh -R 8080:localhost:3000 user@server.com
+
+# SOCKS proxy — route all browser traffic through server
+ssh -D 1080 user@server.com</code></pre>
+          <span class="lang-label">bash</span><button class="copy-btn">Copy</button></div>
+
+        <h3>SSH Server Hardening</h3>
+        <div class="pre-wrap"><pre><code># /etc/ssh/sshd_config — secure defaults
+PermitRootLogin no               # never allow root login via SSH
+PasswordAuthentication no        # key-only, no passwords
+PubkeyAuthentication yes
+Port 2222                        # non-default port (minor security)
+AllowUsers deploy ubuntu         # whitelist specific users
+MaxAuthTries 3                   # lockout after 3 failures
+
+# Restart SSH after changes
+sudo systemctl restart sshd
+
+# Key permissions — SSH is strict about this
+chmod 700 ~/.ssh
+chmod 600 ~/.ssh/id_ed25519      # private key: owner read-only
+chmod 644 ~/.ssh/id_ed25519.pub  # public key: world-readable OK
+chmod 600 ~/.ssh/authorized_keys</code></pre>
+          <span class="lang-label">bash</span><button class="copy-btn">Copy</button></div>
+
+        <h3>Common SSH Issues & Fixes</h3>
+        <table>
+          <tr><th>Error</th><th>Cause</th><th>Fix</th></tr>
+          <tr><td>Permission denied (publickey)</td><td>Wrong key or permissions</td><td>Check <code>~/.ssh/authorized_keys</code> on server, fix permissions</td></tr>
+          <tr><td>Connection refused</td><td>SSH not running or wrong port</td><td><code>sudo systemctl start sshd</code>, check port</td></tr>
+          <tr><td>Host key verification failed</td><td>Server fingerprint changed</td><td><code>ssh-keygen -R hostname</code> to remove old key</td></tr>
+          <tr><td>Too many authentication failures</td><td>SSH tries all keys</td><td>Use <code>-o IdentitiesOnly=yes -i key</code></td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── E. YAML ── -->
+    <div class="section" id="yaml" data-topic="yaml">
+      <div class="section-header">
+        <div class="section-title-row">
+          <span class="section-icon">📄</span>
+          <h2>E. YAML Basics — The DevOps Language</h2>
+        </div>
+        <div class="section-meta">
+          <span class="tag">Foundation</span>
+          <span class="reading-time">⏱ ~20 min</span>
+          <label class="check-label"><input type="checkbox" class="topic-check" data-topic="yaml"> Done</label>
+        </div>
+      </div>
+      <div class="section-body">
+        <div class="tip">🔑 YAML powers Docker Compose, Kubernetes manifests, GitHub Actions, Ansible playbooks, and Helm charts. One syntax, everywhere.</div>
+
+        <h3>YAML Syntax Essentials</h3>
+        <div class="pre-wrap"><pre><code># ── Scalars (simple values) ──
+name: "Alice"          # string (quotes optional if no special chars)
+age: 30                # integer
+price: 9.99            # float
+active: true           # boolean (true/false, yes/no, on/off)
+nothing: null          # null value
+multi: |               # literal block (preserves newlines)
+  Line 1
+  Line 2
+folded: >              # folded block (newlines become spaces)
+  This is all
+  one line.
+
+# ── Sequences (lists) ──
+fruits:
+  - apple
+  - banana
+  - cherry
+
+# Inline list
+fruits: [apple, banana, cherry]
+
+# ── Mappings (key-value / objects) ──
+server:
+  host: localhost
+  port: 8080
+  tls: true
+
+# Inline mapping
+server: {host: localhost, port: 8080}
+
+# ── Nested structures ──
+services:
+  webapp:
+    image: nginx:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      NODE_ENV: production
+      DB_HOST: postgres
+
+# ── Anchors & Aliases (reuse values) ──
+defaults: &defaults    # anchor
+  restart: always
+  network: app-net
+
+webapp:
+  <<: *defaults        # alias — merges defaults
+  image: nginx
+
+# ── IMPORTANT: Indentation rules ──
+# ► Use SPACES only, never tabs
+# ► Consistent indent (2 spaces recommended)
+# ► Sibling keys must be at same indent level</code></pre>
+          <span class="lang-label">yaml</span><button class="copy-btn">Copy</button></div>
+
+        <h3>Common YAML Mistakes</h3>
+        <table>
+          <tr><th>Mistake</th><th>Wrong</th><th>Correct</th></tr>
+          <tr><td>Tabs vs spaces</td><td><code>	name: foo</code></td><td><code>  name: foo</code> (spaces)</td></tr>
+          <tr><td>Missing space after colon</td><td><code>name:foo</code></td><td><code>name: foo</code></td></tr>
+          <tr><td>String that looks like bool</td><td><code>env: yes</code> (becomes true)</td><td><code>env: "yes"</code></td></tr>
+          <tr><td>Unquoted special chars</td><td><code>msg: hello: world</code></td><td><code>msg: "hello: world"</code></td></tr>
+        </table>
+
+        <h3>Validate YAML Online</h3>
+        <div class="pre-wrap"><pre><code># Install yamllint
+pip install yamllint
+
+# Validate a file
+yamllint docker-compose.yml
+yamllint .github/workflows/ci.yml
+
+# VS Code: install "YAML" extension by Red Hat
+# — gives real-time validation and schema support</code></pre>
+          <span class="lang-label">bash</span><button class="copy-btn">Copy</button></div>
+      </div>
+    </div>
+
+    <!-- ── F. DOCKER BASICS ── -->
     <div class="section" id="docker-basics" data-topic="docker">
       <div class="section-header">
         <div class="section-title-row">
           <span class="section-icon">🐳</span>
-          <h2>D. Docker Basics</h2>
+          <h2>F. Docker Basics</h2>
         </div>
         <div class="section-meta">
           <span class="tag">Containers</span>
@@ -784,7 +973,7 @@ docker compose down -v        # also remove volumes
       <div class="section-header">
         <div class="section-title-row">
           <span class="section-icon">🔄</span>
-          <h2>E. CI/CD Introduction</h2>
+          <h2>G. CI/CD Introduction</h2>
         </div>
         <div class="section-meta">
           <span class="tag">Automation</span>
