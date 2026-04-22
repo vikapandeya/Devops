@@ -468,16 +468,347 @@ hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
 .num { color: #f78c6c; }
 .fn { color: #82aaff; }
 .var { color: #ffcb6b; }
+
+/* ===== DIAGRAM BOX (was missing from CSS) ===== */
+.diagram-box {
+  background: linear-gradient(135deg, #0d1117 0%, #111827 100%);
+  border: 1px solid #2e3250;
+  border-left: 4px solid var(--accent);
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.9;
+  color: #a8d8f8;
+}
+
+/* ===== TOP BAR (mobile) ===== */
+.topbar {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 54px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+  padding: 0 16px;
+  z-index: 200;
+  gap: 12px;
+}
+.topbar-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===== HAMBURGER ===== */
+.hamburger {
+  display: none;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 20px;
+  width: 38px; height: 38px;
+  border-radius: 8px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+.hamburger:hover { background: var(--surface2); }
+
+/* ===== SIDEBAR OVERLAY (mobile) ===== */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 150;
+  backdrop-filter: blur(2px);
+}
+.sidebar-overlay.active { display: block; }
+
+/* ===== SIDEBAR SEARCH ===== */
+.sidebar-search-wrap {
+  padding: 10px 0 0;
+}
+.sidebar-search {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px 8px 30px;
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 10px center;
+  transition: border-color 0.2s;
+}
+.sidebar-search:focus { border-color: var(--accent); }
+.sidebar-search::placeholder { color: var(--muted); }
+.toc-link.search-hidden { display: none; }
+.toc-section.search-empty { display: none; }
+.search-no-results {
+  padding: 12px 20px;
+  color: var(--muted);
+  font-size: 13px;
+  display: none;
+}
+
+/* ===== THEME TOGGLE ===== */
+.theme-toggle {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: 32px; height: 32px;
+  cursor: pointer;
+  font-size: 15px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.theme-toggle:hover { background: var(--border); }
+
+/* ===== LIGHT MODE ===== */
+html.light-mode {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface2: #f1f5f9;
+  --border: #e2e8f0;
+  --accent: #2563eb;
+  --text: #1e293b;
+  --muted: #64748b;
+  --code-bg: #f8fafc;
+}
+html.light-mode body { background: var(--bg); color: var(--text); }
+html.light-mode pre { border-color: #d1d5db; }
+html.light-mode pre code { color: #1d4ed8; }
+html.light-mode code { background: #e0e7ff; color: #1e40af; }
+html.light-mode .sidebar { background: #ffffff; }
+html.light-mode .hero {
+  background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 50%, #faf5ff 100%);
+}
+
+/* ===== COPY BUTTON ===== */
+.pre-wrapper { position: relative; margin: 14px 0; }
+.pre-wrapper pre { margin: 0; }
+.copy-btn {
+  position: absolute;
+  top: 8px; right: 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s, background 0.2s, color 0.2s;
+  z-index: 10;
+  letter-spacing: 0.3px;
+}
+.pre-wrapper:hover .copy-btn { opacity: 1; }
+.copy-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
+.copy-btn.copied { background: var(--green); color: white; border-color: var(--green); opacity: 1; }
+
+/* ===== LANGUAGE LABEL ===== */
+.lang-tag {
+  position: absolute;
+  top: 8px; left: 12px;
+  font-size: 10px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* ===== SCROLL-TO-TOP ===== */
+.scroll-top {
+  position: fixed;
+  bottom: 28px; right: 28px;
+  width: 44px; height: 44px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(79,142,247,0.4);
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.3s, transform 0.3s;
+  z-index: 300;
+  display: flex; align-items: center; justify-content: center;
+}
+.scroll-top.visible { opacity: 1; transform: translateY(0); }
+.scroll-top:hover { background: #3b74e0; }
+
+/* ===== ACTIVE TOC LINK ===== */
+.toc-link.active-section {
+  color: var(--accent) !important;
+  background: rgba(79,142,247,0.08);
+  border-left-color: var(--accent);
+  font-weight: 600;
+}
+
+/* ===== READING TIME BADGE ===== */
+.read-time {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 400;
+  margin-left: 10px;
+  background: var(--surface2);
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+/* ===== PREREQUISITE NOTICE ===== */
+.prereq-notice {
+  background: rgba(124,58,237,0.08);
+  border: 1px solid rgba(124,58,237,0.25);
+  border-left: 4px solid #7c3aed;
+  border-radius: 8px;
+  padding: 12px 18px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  color: #c4b5fd;
+}
+.prereq-notice strong { color: #a78bfa; }
+.prereq-notice a { color: #a78bfa; text-decoration: underline; }
+
+/* ===== ROLE FILTER HIGHLIGHTING ===== */
+.section[data-level] { transition: opacity 0.3s, outline 0.3s; }
+.role-dimmed { opacity: 0.35; }
+.role-highlighted {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+/* ===== PROJECTS OVERVIEW TABLE ===== */
+.projects-overview {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 32px;
+}
+.projects-overview h3 { margin-top: 0; color: var(--accent); }
+.projects-overview table { font-size: 13px; }
+.projects-overview td:first-child { font-weight: 700; color: var(--accent); white-space: nowrap; }
+.proj-badge {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.proj-badge.beginner { background: rgba(16,185,129,0.15); color: var(--green); }
+.proj-badge.intermediate { background: rgba(245,158,11,0.15); color: var(--yellow); }
+.proj-badge.advanced { background: rgba(239,68,68,0.15); color: var(--red); }
+
+/* ===== PROGRESS BAR (reading) ===== */
+.reading-progress {
+  position: fixed;
+  top: 0; left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  z-index: 9999;
+  width: 0%;
+  transition: width 0.1s;
+}
+
+/* ===== PRINT ===== */
+@media print {
+  .sidebar, .hamburger, .topbar, .scroll-top, .copy-btn,
+  .theme-toggle, .reading-progress, .role-selector { display: none !important; }
+  .content { margin-left: 0 !important; padding: 20px !important; max-width: 100% !important; }
+  body { background: white !important; color: black !important; font-size: 12px; }
+  pre { background: #f5f5f5 !important; border: 1px solid #ccc !important; page-break-inside: avoid; }
+  pre code { color: #333 !important; }
+  .section { page-break-inside: avoid; }
+  h2 { page-break-before: always; }
+  h2:first-child { page-break-before: avoid; }
+  a { color: black; text-decoration: none; }
+  .tip-box, .warn-box, .info-box, .success-box {
+    background: white !important; border: 1px solid #ccc !important;
+  }
+}
+
+/* ===== RESPONSIVE — 600px ===== */
+@media (max-width: 900px) {
+  .sidebar {
+    display: block !important;
+    position: fixed;
+    left: -300px;
+    top: 0; bottom: 0;
+    width: 280px;
+    z-index: 160;
+    transition: left 0.3s ease;
+    overflow-y: auto;
+  }
+  .sidebar.open { left: 0; }
+  .content { margin-left: 0; padding: 20px; padding-top: 70px; }
+  .topbar { display: flex; }
+  .hamburger { display: flex; }
+}
+@media (max-width: 600px) {
+  .content { padding: 16px; padding-top: 70px; }
+  .hero { padding: 30px 20px; }
+  .hero h1 { font-size: 24px; }
+  pre code { font-size: 11px; }
+  table { font-size: 12px; }
+  th, td { padding: 7px 8px; }
+  .cheat-grid { grid-template-columns: 1fr; }
+  .compare-grid { grid-template-columns: 1fr; }
+  .project-meta { flex-direction: column; gap: 6px; }
+  .section-header h2 { font-size: 20px; }
+  h3 { font-size: 16px; }
+  .scroll-top { bottom: 16px; right: 16px; width: 38px; height: 38px; font-size: 16px; }
+}
+@media (max-width: 375px) {
+  .content { padding: 12px; padding-top: 66px; }
+  .hero h1 { font-size: 21px; }
+  pre code { font-size: 10.5px; }
+  .toc-link { font-size: 12px; padding: 5px 16px; }
+}
+
 </style>
 </head>
 <body>
+<div class="reading-progress" id="reading-progress"></div>
+<div class="topbar" id="topbar">
+  <button class="hamburger" id="hamburger" aria-label="Open navigation">☰</button>
+  <span class="topbar-title" id="topbar-title">DevOps Mastery Guide</span>
+  <button class="theme-toggle" id="theme-toggle-top" title="Toggle light/dark">🌙</button>
+</div>
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
 <div class="wrapper">
 
 <!-- SIDEBAR -->
 <nav class="sidebar">
   <div class="sidebar-header">
-    <h2>DevOps Mastery</h2>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <h2>DevOps Mastery</h2>
+      <button class="theme-toggle" id="theme-toggle" title="Toggle light/dark mode">🌙</button>
+    </div>
     <p>Zero → Job-Ready Guide</p>
+    <div class="sidebar-search-wrap">
+      <input type="text" id="sidebar-search" class="sidebar-search" placeholder="Search topics…" autocomplete="off">
+    </div>
+    <div class="search-no-results" id="search-no-results">No results found</div>
   </div>
   <div class="toc-section">
     <div class="toc-section-title">Getting Started</div>
@@ -627,7 +958,7 @@ hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
 </div>
 
 <!-- ======================== LINUX ======================== -->
-<div class="section" id="linux">
+<div class="section" id="linux" data-level="fresher">
   <div class="section-header">
     <div class="section-icon" style="background:rgba(249,115,22,0.15);">🐧</div>
     <h2>A. Linux — Foundation of DevOps</h2>
@@ -919,7 +1250,7 @@ perf top             <span class="cm"># CPU profiling</span></code></pre>
 </div>
 
 <!-- ======================== NETWORKING ======================== -->
-<div class="section" id="networking">
+<div class="section" id="networking" data-level="fresher">
   <div class="section-header">
     <div class="section-icon" style="background:rgba(16,185,129,0.15);">🌐</div>
     <h2>B. Networking for DevOps</h2>
@@ -1064,7 +1395,7 @@ ufw allow 22/tcp</code></pre>
 </div>
 
 <!-- ======================== GIT ======================== -->
-<div class="section" id="git">
+<div class="section" id="git" data-level="fresher all">
   <div class="section-header">
     <div class="section-icon" style="background:rgba(124,58,237,0.15);">🌿</div>
     <h2>C. Git — Version Control Mastery</h2>
@@ -1224,7 +1555,7 @@ git remote prune origin    <span class="cm"># remove stale remote refs</span></c
 <!-- This file will be merged into the final guide -->
 
 <!-- ======================== CI/CD ======================== -->
-<div class="section" id="cicd">
+<div class="section" id="cicd" data-level="mid">
   <div class="section-header">
     <div class="section-icon" style="background:rgba(79,142,247,0.15);">⚙️</div>
     <h2>D. CI/CD — The Heart of DevOps</h2>
@@ -1552,7 +1883,7 @@ deploy:production:
 </div>
 
 <!-- ======================== DOCKER ======================== -->
-<div class="section" id="docker">
+<div class="section" id="docker" data-level="mid">
   <div class="section-header">
     <div class="section-icon" style="background:rgba(14,165,233,0.15);">🐳</div>
     <h2>E. Docker — Containers Deep Dive</h2>
@@ -1806,7 +2137,7 @@ docker load < myapp.tar.gz</code></pre>
 </div>
 
 <!-- ======================== KUBERNETES ======================== -->
-<div class="section" id="kubernetes">
+<div class="section" id="kubernetes" data-level="all">
   <div class="section-header">
     <div class="section-icon" style="background:rgba(124,58,237,0.15);">☸️</div>
     <h2>F. Kubernetes — Container Orchestration</h2>
@@ -2170,7 +2501,7 @@ kubectl logs -n kube-system -l k8s-app=kube-proxy</code></pre>
 <!-- PART 3: Cloud, Terraform, Ansible, Monitoring, DevSecOps, System Design -->
 
 <!-- ======================== CLOUD ======================== -->
-<div class="section" id="cloud">
+<div class="section" id="cloud" data-level="mid senior">
   <div class="section-header">
     <div class="section-icon" style="background:rgba(245,158,11,0.15);">☁️</div>
     <h2>G. Cloud — AWS Focus</h2>
@@ -2393,7 +2724,7 @@ aws autoscaling put-scaling-policy \
 </div>
 
 <!-- ======================== TERRAFORM ======================== -->
-<div class="section" id="terraform">
+<div class="section" id="terraform" data-level="mid senior">
   <div class="section-header">
     <div class="section-icon" style="background:rgba(124,58,237,0.15);">🏗️</div>
     <h2>H. Terraform — Infrastructure as Code</h2>
@@ -2612,7 +2943,7 @@ terraform workspace list</code></pre>
 </div>
 
 <!-- ======================== ANSIBLE ======================== -->
-<div class="section" id="ansible">
+<div class="section" id="ansible" data-level="mid">
   <div class="section-header">
     <div class="section-icon" style="background:rgba(239,68,68,0.15);">🤖</div>
     <h2>I. Ansible — Configuration Management</h2>
@@ -2828,10 +3159,21 @@ ansible-vault decrypt secrets.yml
 ansible-vault view secrets.yml
 ansible-playbook site.yml --ask-vault-pass
 ansible-playbook site.yml --vault-password-file ~/.vault_pass</code></pre>
+
+  <h3>Interview Questions — Ansible</h3>
+  <div class="qa-block">
+    <div class="question">What is idempotency in Ansible and why does it matter?</div>
+    <div class="answer">Idempotency means running a playbook multiple times produces the same result as running it once — no unintended side effects on subsequent runs. Ansible modules like <code>package</code>, <code>service</code>, <code>copy</code>, and <code>template</code> are idempotent by design: they check current state before making changes and report <code>ok</code> if no change is needed. This matters for production: you can safely re-run playbooks after failures, drift correction, or adding new hosts without worrying about double-applying changes. Use <code>creates</code> or <code>changed_when</code> to make <code>command</code>/<code>shell</code> tasks idempotent too.</div>
+  </div>
+  <div class="qa-block">
+    <div class="question">How do you manage secrets securely in Ansible across multiple environments?</div>
+    <div class="answer">Use <strong>Ansible Vault</strong> to encrypt sensitive files or individual variables. Best practice: keep one encrypted <code>vars/secrets.yml</code> per environment, store the vault password in a CI/CD secret (GitHub Actions secret, Jenkins credential) and pass it via <code>--vault-password-file</code>. Never commit plaintext secrets. For advanced setups, integrate with HashiCorp Vault using the <code>community.hashi_vault</code> collection — this gives dynamic secrets with automatic rotation. In AWS environments, use the <code>amazon.aws.aws_secret</code> lookup plugin to pull secrets from Secrets Manager at runtime without storing them at all.</div>
+  </div>
+
 </div>
 
 <!-- ======================== MONITORING ======================== -->
-<div class="section" id="monitoring">
+<div class="section" id="monitoring" data-level="mid senior">
   <div class="section-header">
     <div class="section-icon" style="background:rgba(16,185,129,0.15);">📊</div>
     <h2>J. Monitoring & Observability</h2>
@@ -2991,7 +3333,7 @@ services:
 </div>
 
 <!-- ======================== DEVSECOPS ======================== -->
-<div class="section" id="devsecops">
+<div class="section" id="devsecops" data-level="senior">
   <div class="section-header">
     <div class="section-icon" style="background:rgba(239,68,68,0.15);">🔒</div>
     <h2>K. DevSecOps — Security in DevOps</h2>
@@ -3089,10 +3431,21 @@ docker run -t owasp/zap2docker-stable zap-baseline.py \
 # Detect secrets in code
 gitleaks detect --source=. --verbose
 truffleHog git file://. --since-commit HEAD~5</code></pre>
+
+  <h3>Interview Questions — DevSecOps</h3>
+  <div class="qa-block">
+    <div class="question">What is the difference between SAST, DAST, and SCA, and where do they fit in a pipeline?</div>
+    <div class="answer"><strong>SAST (Static Application Security Testing)</strong> analyzes source code without running it — tools like SonarQube, Semgrep, Checkmarx. Run at the build/PR stage. Fast, catches logic flaws, SQL injection, hardcoded secrets. <strong>DAST (Dynamic Application Security Testing)</strong> tests a running application — tools like OWASP ZAP, Burp Suite. Run against a deployed staging environment. Catches runtime issues SAST misses: authentication flaws, SSRF. <strong>SCA (Software Composition Analysis)</strong> scans third-party dependencies for known CVEs — tools like Snyk, OWASP Dependency-Check, Trivy. Run at build time. In a pipeline: SAST + SCA → build → deploy to staging → DAST → promote to prod.</div>
+  </div>
+  <div class="qa-block">
+    <div class="question">How do you prevent secrets from being committed to Git?</div>
+    <div class="answer">Defense in depth: <strong>(1) Pre-commit hooks</strong> — use <code>pre-commit</code> with <code>detect-secrets</code> or <code>gitleaks</code> to scan staged files before every commit. <strong>(2) CI scanning</strong> — run <code>gitleaks</code> or <code>truffleHog</code> on every PR as a required check. <strong>(3) GitHub secret scanning</strong> — enable it free for public repos; push protection blocks commits with known secret patterns. <strong>(4) Developer education</strong> — add <code>.env</code> to <code>.gitignore</code> globally. If a secret is already committed: rotate it immediately (the secret is compromised), use <code>git filter-repo</code> to purge it from history, then force-push — but assume it was seen.</div>
+  </div>
+
 </div>
 
 <!-- ======================== SYSTEM DESIGN ======================== -->
-<div class="section" id="sysdesign">
+<div class="section" id="sysdesign" data-level="senior">
   <div class="section-header">
     <div class="section-icon" style="background:rgba(245,158,11,0.15);">🏛️</div>
     <h2>L. System Design — DevOps Perspective</h2>
@@ -3250,6 +3603,32 @@ CANARY DEPLOYMENT:
 
 <!-- ======================== PROJECTS ======================== -->
 <div class="section" id="projects">
+
+  <div class="projects-overview">
+    <h3>All 12 Projects at a Glance</h3>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th>#</th><th>Project</th><th>Level</th><th>Time</th><th>Key Tech</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><a href="#projects">1</a></td><td>Static App with Docker</td><td><span class="proj-badge beginner">Beginner</span></td><td>2-3 hrs</td><td>Docker, Nginx</td></tr>
+          <tr><td><a href="#projects">2</a></td><td>CI/CD Pipeline with GitHub Actions</td><td><span class="proj-badge intermediate">Intermediate</span></td><td>4-6 hrs</td><td>GitHub Actions, Docker, EC2</td></tr>
+          <tr><td><a href="#projects">3</a></td><td>Kubernetes with Full Monitoring</td><td><span class="proj-badge advanced">Advanced</span></td><td>1-2 days</td><td>K8s, Helm, Prometheus</td></tr>
+          <tr><td><a href="#setup1">4</a></td><td>2-Tier LEMP Stack on AWS + ALB</td><td><span class="proj-badge intermediate">Intermediate</span></td><td>4-6 hrs</td><td>EC2, MySQL, Nginx, ALB</td></tr>
+          <tr><td><a href="#setup2">5</a></td><td>Multi-Tier AWS + Bastion + VPC</td><td><span class="proj-badge advanced">Advanced</span></td><td>6-8 hrs</td><td>VPC, Bastion, ALB, RDS</td></tr>
+          <tr><td><a href="#setup3">6</a></td><td>Cloudflare + Terraform + AWS ALB</td><td><span class="proj-badge advanced">Advanced</span></td><td>1 day</td><td>Cloudflare, Terraform, ASG</td></tr>
+          <tr><td><a href="#setup4">7</a></td><td>Production Kubernetes — GitOps</td><td><span class="proj-badge advanced">Advanced</span></td><td>1-2 days</td><td>EKS, ArgoCD, Helm, Prometheus</td></tr>
+          <tr><td><a href="#project-serverless">8</a></td><td>Serverless REST API</td><td><span class="proj-badge intermediate">Intermediate</span></td><td>4-6 hrs</td><td>Lambda, API GW, DynamoDB, Terraform</td></tr>
+          <tr><td><a href="#project-devsecops-pipeline">9</a></td><td>Full DevSecOps Pipeline</td><td><span class="proj-badge advanced">Advanced</span></td><td>1-2 days</td><td>Jenkins, SonarQube, Trivy, ArgoCD</td></tr>
+          <tr><td><a href="#project-wordpress-ha">10</a></td><td>WordPress HA — CloudFront + WAF</td><td><span class="proj-badge advanced">Advanced</span></td><td>1 day</td><td>EC2 ASG, RDS Aurora, EFS, CloudFront</td></tr>
+          <tr><td><a href="#project-ecs-microservices">11</a></td><td>ECS Fargate Microservices</td><td><span class="proj-badge advanced">Advanced</span></td><td>1-2 days</td><td>ECS, Fargate, ECR, Terraform</td></tr>
+          <tr><td><a href="#project-istio-mesh">12</a></td><td>Production Istio Service Mesh</td><td><span class="proj-badge advanced">Advanced</span></td><td>2 days</td><td>EKS, Istio, Flagger, Kiali, Jaeger</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
   <div class="section-header">
     <div class="section-icon" style="background:rgba(16,185,129,0.15);">🚀</div>
     <h2>Real-World Projects</h2>
@@ -6567,10 +6946,13 @@ kubectl rollout status deployment/api -n production -w</code></pre>
 <!-- NEW CONTENT PART 1: SRE, Serverless, ECS, K8s Advanced, Istio, Kafka -->
 
 <!-- ======================== SRE ======================== -->
-<div class="section" id="sre">
+<div class="section" id="sre" data-level="senior">
   <div class="section-header">
     <div class="section-icon" style="background:rgba(16,185,129,0.15);">🛡️</div>
     <h2>M. SRE — Site Reliability Engineering</h2>
+
+  <div class="prereq-notice"><strong>Prerequisites:</strong> SRE concepts build on <a href="#monitoring">J. Monitoring & Observability</a>. Understand Prometheus, Grafana, and alerting before reading about SLOs and error budgets.</div>
+
     <span class="level-tag badge-purple badge">Senior Level</span>
   </div>
 
@@ -6738,7 +7120,7 @@ spec:
 </div>
 
 <!-- ======================== SERVERLESS / LAMBDA ======================== -->
-<div class="section" id="serverless">
+<div class="section" id="serverless" data-level="mid senior">
   <div class="section-header">
     <div class="section-icon" style="background:rgba(245,158,11,0.15);">⚡</div>
     <h2>N. AWS Lambda &amp; Serverless Architecture</h2>
@@ -7015,7 +7397,7 @@ exports.handler = async (event) => { /* use client */ };</code></pre>
 </div>
 
 <!-- ======================== ECS / FARGATE ======================== -->
-<div class="section" id="ecs">
+<div class="section" id="ecs" data-level="mid">
   <div class="section-header">
     <div class="section-icon" style="background:rgba(249,115,22,0.15);">🚢</div>
     <h2>O. AWS ECS &amp; Fargate — Managed Containers</h2>
@@ -7243,10 +7625,13 @@ aws ecr put-lifecycle-policy \
 </div>
 
 <!-- ======================== KUBERNETES ADVANCED ======================== -->
-<div class="section" id="k8s-advanced">
+<div class="section" id="k8s-advanced" data-level="senior">
   <div class="section-header">
     <div class="section-icon" style="background:rgba(124,58,237,0.15);">☸️</div>
     <h2>P. Kubernetes Advanced — StatefulSets, Storage, Scheduling</h2>
+
+  <div class="prereq-notice"><strong>Prerequisites:</strong> Make sure you've read <a href="#kubernetes">F. Kubernetes Basics</a> before diving into this section. This section covers advanced scheduling, StatefulSets, and storage — concepts that build on core K8s knowledge.</div>
+
     <span class="level-tag badge-purple badge">Advanced</span>
   </div>
 
@@ -7556,10 +7941,13 @@ spec:
 </div>
 
 <!-- ======================== SERVICE MESH / ISTIO ======================== -->
-<div class="section" id="istio">
+<div class="section" id="istio" data-level="senior">
   <div class="section-header">
     <div class="section-icon" style="background:rgba(79,142,247,0.15);">🕸️</div>
     <h2>Q. Service Mesh — Istio</h2>
+
+  <div class="prereq-notice"><strong>Prerequisites:</strong> This section requires solid understanding of <a href="#kubernetes">F. Kubernetes</a> and ideally <a href="#k8s-advanced">P. Kubernetes Advanced</a>. Istio adds a sidecar to every pod, so you need to be comfortable with pod specs and namespaces first.</div>
+
     <span class="level-tag badge-purple badge">Senior Level</span>
   </div>
 
@@ -8326,6 +8714,9 @@ print(f"Untagged instances ({len(untagged)}): {untagged}")</code></pre>This demo
   <div class="section-header">
     <div class="section-icon" style="background:rgba(79,142,247,0.15);">🔭</div>
     <h2>V. OpenTelemetry — Modern Observability</h2>
+
+  <div class="prereq-notice"><strong>Prerequisites:</strong> OpenTelemetry extends the concepts from <a href="#monitoring">J. Monitoring</a>. Familiarity with Prometheus and distributed systems helps. OTel replaces per-vendor SDKs with a single open standard.</div>
+
     <span class="level-tag badge-purple badge">Advanced</span>
   </div>
 
@@ -9025,7 +9416,7 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 
 <!-- ==================== PROJECT 5: SERVERLESS API ==================== -->
 <section id="project-serverless" class="section">
-  <h2>Project 8: Serverless REST API — Lambda + API Gateway + DynamoDB + Terraform</h2>
+  <h2>Project 8 — Serverless REST API — Lambda + API Gateway + DynamoDB + Terraform</h2>
 
   <div class="diagram-box">
     <strong>Architecture</strong><br>
@@ -9350,11 +9741,17 @@ jobs:
             --function-name myapp-api-prod \
             --name live \
             --function-version $VERSION</code></pre>
+
+  <div class="qa-block">
+    <div class="question">How do you handle DynamoDB hot partitions in a high-traffic serverless API?</div>
+    <div class="answer">Hot partitions occur when too many requests hit the same partition key. Solutions: <strong>(1) Design partition keys for even distribution</strong> — use high-cardinality keys (UUID, user ID) not low-cardinality (date, status). <strong>(2) Write sharding</strong> — append a random suffix (1-N) to the partition key and read from all shards. <strong>(3) DAX (DynamoDB Accelerator)</strong> — in-memory cache that absorbs read hot spots with microsecond latency. <strong>(4) SQS buffering</strong> — for write-heavy paths, put events in SQS and batch-write to DynamoDB. <strong>(5) Use DynamoDB's on-demand mode</strong> during traffic spikes — it handles burst automatically without pre-provisioning. Monitor with CloudWatch <code>ConsumedWriteCapacityUnits</code> per partition.</div>
+  </div>
+
 </section>
 
 <!-- ==================== PROJECT 6: FULL DEVSECOPS PIPELINE ==================== -->
 <section id="project-devsecops-pipeline" class="section">
-  <h2>Project 9: Full DevSecOps Pipeline — Jenkins + SonarQube + Trivy + ArgoCD + Kubernetes</h2>
+  <h2>Project 9 — Full DevSecOps Pipeline — Jenkins + SonarQube + Trivy + ArgoCD + Kubernetes</h2>
 
   <div class="diagram-box">
     <strong>Pipeline Flow</strong><br>
@@ -9612,7 +10009,7 @@ volumes:
 
 <!-- ==================== PROJECT 7: WORDPRESS HA ==================== -->
 <section id="project-wordpress-ha" class="section">
-  <h2>Project 10: WordPress HA — EC2 ASG + RDS + EFS + CloudFront + WAF</h2>
+  <h2>Project 10 — WordPress HA — EC2 ASG + RDS + EFS + CloudFront + WAF</h2>
 
   <div class="diagram-box">
     <strong>Architecture</strong><br>
@@ -9862,11 +10259,17 @@ sed -i 's/group = apache/group = nginx/' /etc/php-fpm.d/www.conf
 # Start services
 systemctl enable --now nginx php-fpm
 systemctl enable --now amazon-ssm-agent</code></pre>
+
+  <div class="qa-block">
+    <div class="question">Why use EFS instead of EBS for a WordPress multi-server setup, and what are the trade-offs?</div>
+    <div class="answer"><strong>EBS (Elastic Block Store)</strong> can only be attached to one EC2 instance at a time — this makes it impossible to share <code>/var/www/html</code> (WordPress uploads, themes, plugins) across multiple app servers in an ASG. <strong>EFS (Elastic File System)</strong> is NFS-based and supports concurrent mounts from many EC2s simultaneously, making it the right choice for shared WordPress files. Trade-offs: EFS is ~3-6x more expensive than EBS per GB, has higher latency (~ms vs µs for EBS), and has lower peak IOPS. For static assets, the better architecture is EFS for WordPress core files + a CloudFront CDN in front to cache and serve static content, which removes most EFS read traffic. Alternatively, use S3 with the WP Offload Media plugin to move uploads to S3 entirely.</div>
+  </div>
+
 </section>
 
 <!-- ==================== PROJECT 8: ECS FARGATE MICROSERVICES ==================== -->
 <section id="project-ecs-microservices" class="section">
-  <h2>Project 11: ECS Fargate Microservices + Terraform + GitHub Actions</h2>
+  <h2>Project 11 — ECS Fargate Microservices + Terraform + GitHub Actions</h2>
 
   <div class="diagram-box">
     <strong>Architecture</strong><br>
@@ -10104,11 +10507,20 @@ jobs:
           aws ecs wait services-stable \
             --cluster prod-cluster \
             --services ${{ matrix.service }}</code></pre>
+
+  <div class="qa-block">
+    <div class="question">How does ECS Service Connect differ from a traditional service mesh like Istio?</div>
+    <div class="answer"><strong>ECS Service Connect</strong> is AWS-managed, zero-config service discovery and basic traffic management built into ECS. It uses AWS Cloud Map DNS + a lightweight Envoy proxy sidecar injected automatically. No Helm charts, no CRDs, no control plane to manage. <strong>Istio</strong> is a full service mesh: mTLS everywhere, advanced traffic policies (canary, circuit breaker, retry), distributed tracing, and fine-grained authorization. Service Connect is right when: you run ECS Fargate and need simple service-to-service discovery with retries and basic observability. Istio is right when: you need progressive delivery (canary/blue-green), security policy enforcement (zero-trust mTLS), or detailed trace-level observability across a complex microservices topology. Service Connect is 80% simpler for 80% of use cases.</div>
+  </div>
+
 </section>
 
 <!-- ==================== PROJECT 9: ISTIO SERVICE MESH ==================== -->
 <section id="project-istio-mesh" class="section">
-  <h2>Project 12: Production Istio Service Mesh on EKS — Full Observability + mTLS + Canary</h2>
+  <h2>Project 12 — Production Istio Service Mesh on EKS — Full Observability + mTLS + Canary</h2>
+
+  <div class="prereq-notice"><strong>Prerequisites:</strong> This project assumes you've worked through <a href="#kubernetes">F. Kubernetes</a>, <a href="#setup4">Project 7 (EKS)</a>, and <a href="#istio">Q. Istio Service Mesh</a>. It's the most advanced project in this guide.</div>
+
 
   <div class="diagram-box">
     <strong>Stack</strong><br>
@@ -10710,6 +11122,16 @@ spec:
       ports:
         - protocol: TCP
           port: 9090</code></pre>
+
+  <div class="qa-block">
+    <div class="question">What is the difference between Pod Security Standards (PSS) and OPA Gatekeeper?</div>
+    <div class="answer"><strong>Pod Security Standards (PSS)</strong> are built into Kubernetes (v1.25+) and provide three built-in profiles: <em>Privileged</em> (no restrictions), <em>Baseline</em> (prevents known privilege escalation), <em>Restricted</em> (heavily constrained). Applied with namespace labels — simple, zero extra tooling. <strong>OPA Gatekeeper</strong> is more powerful: write any custom policy as Rego code. Use cases PSS can't cover: require specific labels, enforce image registry allowlists, mandate resource limits. The recommended approach: use PSS for baseline enforcement everywhere, add Gatekeeper for organization-specific policies that PSS doesn't cover.</div>
+  </div>
+  <div class="qa-block">
+    <div class="question">A developer asks for admin access to the production Kubernetes cluster. How do you handle this?</div>
+    <div class="answer">Never grant cluster-admin to developers in production. Instead: <strong>(1)</strong> Understand the actual need — do they need to debug a pod, check logs, or deploy? <strong>(2)</strong> Grant namespace-scoped Roles, not ClusterRoles: <code>pods/log</code> for log access, <code>pods/exec</code> for debugging. <strong>(3)</strong> For deployments, use GitOps (ArgoCD) — developers push to Git, ArgoCD deploys with its own service account. Developers never touch prod directly. <strong>(4)</strong> For emergencies, use time-bound break-glass access with audit logging and require a second approver. Log all cluster API calls to CloudTrail or audit logs. Access should be auditable, minimal, and time-limited.</div>
+  </div>
+
 </section>
 
 <!-- ==================== INTERVIEW ADDITIONAL Q&A ==================== -->
@@ -10929,18 +11351,273 @@ kubectl get namespace stuck-ns -o json | jq '.spec.finalizers = []' | kubectl re
 </div>
 
 <script>
-function setRole(role) {
-  document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
-  event.target.classList.add('active');
-  // In a real implementation, this would show/hide level-specific content
-  const msg = {
-    'all': 'Showing all content for all experience levels.',
-    'fresher': 'Focus: Linux basics, Git, Docker fundamentals, CI/CD intro.',
-    'mid': 'Focus: Docker advanced, Kubernetes, CI/CD pipelines, Terraform, AWS.',
-    'senior': 'Focus: K8s advanced, System design, DevSecOps, Cost optimization, Team practices.'
+(function() {
+  'use strict';
+
+  // ---- Reading Progress Bar ----
+  const progressBar = document.getElementById('reading-progress');
+  function updateProgress() {
+    const scrollTop = window.scrollY;
+    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    const pct = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+    if (progressBar) progressBar.style.width = pct + '%';
+  }
+
+  // ---- Scroll-to-Top ----
+  const scrollTopBtn = document.getElementById('scroll-top');
+  function updateScrollTop() {
+    if (scrollTopBtn) {
+      if (window.scrollY > 400) scrollTopBtn.classList.add('visible');
+      else scrollTopBtn.classList.remove('visible');
+    }
+  }
+  if (scrollTopBtn) {
+    scrollTopBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+  }
+
+  // ---- Active TOC Link via IntersectionObserver ----
+  const tocLinks = document.querySelectorAll('.toc-link');
+  const sections = document.querySelectorAll('[id]');
+  const topbarTitle = document.getElementById('topbar-title');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        tocLinks.forEach(link => {
+          link.classList.toggle('active-section', link.getAttribute('href') === '#' + id);
+        });
+        const activeLink = document.querySelector('.toc-link[href="#' + id + '"]');
+        if (activeLink && topbarTitle) {
+          topbarTitle.textContent = activeLink.textContent;
+        }
+        // Auto-scroll active link into view in sidebar
+        if (activeLink) {
+          const sidebar = document.querySelector('.sidebar');
+          if (sidebar) {
+            const linkTop = activeLink.offsetTop;
+            const sidebarHeight = sidebar.clientHeight;
+            const sidebarScrollTop = sidebar.scrollTop;
+            if (linkTop < sidebarScrollTop + 60 || linkTop > sidebarScrollTop + sidebarHeight - 60) {
+              sidebar.scrollTo({ top: linkTop - sidebarHeight / 2, behavior: 'smooth' });
+            }
+          }
+        }
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px', threshold: 0 });
+
+  sections.forEach(s => observer.observe(s));
+
+  // ---- Mobile Hamburger ----
+  const hamburger = document.getElementById('hamburger');
+  const overlay = document.getElementById('sidebar-overlay');
+  const sidebar = document.querySelector('.sidebar');
+
+  function openSidebar() {
+    sidebar && sidebar.classList.add('open');
+    overlay && overlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeSidebar() {
+    sidebar && sidebar.classList.remove('open');
+    overlay && overlay.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  if (hamburger) hamburger.addEventListener('click', openSidebar);
+  if (overlay) overlay.addEventListener('click', closeSidebar);
+
+  // Close sidebar when a TOC link is clicked on mobile
+  tocLinks.forEach(link => link.addEventListener('click', () => {
+    if (window.innerWidth < 900) closeSidebar();
+  }));
+
+  // Keyboard: Escape closes sidebar
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeSidebar();
+  });
+
+  // ---- Theme Toggle (Dark / Light) ----
+  const THEME_KEY = 'devops-guide-theme';
+  function applyTheme(theme) {
+    if (theme === 'light') {
+      document.documentElement.classList.add('light-mode');
+      document.querySelectorAll('.theme-toggle').forEach(b => b.textContent = '☀️');
+    } else {
+      document.documentElement.classList.remove('light-mode');
+      document.querySelectorAll('.theme-toggle').forEach(b => b.textContent = '🌙');
+    }
+    localStorage.setItem(THEME_KEY, theme);
+  }
+  function toggleTheme() {
+    const current = localStorage.getItem(THEME_KEY) || 'dark';
+    applyTheme(current === 'dark' ? 'light' : 'dark');
+  }
+  // Apply saved theme on load
+  applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
+
+  document.querySelectorAll('.theme-toggle, #theme-toggle-top').forEach(btn => {
+    btn.addEventListener('click', toggleTheme);
+  });
+
+  // ---- Copy Buttons on Code Blocks ----
+  document.querySelectorAll('pre').forEach(pre => {
+    // Wrap in .pre-wrapper if not already
+    if (!pre.parentElement.classList.contains('pre-wrapper')) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'pre-wrapper';
+      pre.parentNode.insertBefore(wrapper, pre);
+      wrapper.appendChild(pre);
+    }
+    // Add copy button
+    const btn = document.createElement('button');
+    btn.className = 'copy-btn';
+    btn.textContent = 'Copy';
+    btn.addEventListener('click', async () => {
+      const code = pre.querySelector('code');
+      const text = code ? code.innerText : pre.innerText;
+      try {
+        await navigator.clipboard.writeText(text);
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+      } catch {
+        // Fallback
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+      }
+    });
+    pre.parentElement.appendChild(btn);
+
+    // Add language label
+    const code = pre.querySelector('code');
+    if (code && code.className) {
+      const langMatch = code.className.match(/language-(w+)/);
+      if (langMatch) {
+        const label = document.createElement('span');
+        label.className = 'lang-tag';
+        const langMap = {
+          bash: 'Shell', yaml: 'YAML', javascript: 'JS', python: 'Python',
+          hcl: 'Terraform', groovy: 'Groovy', json: 'JSON', sql: 'SQL',
+          dockerfile: 'Dockerfile', nginx: 'Nginx', go: 'Go', typescript: 'TS'
+        };
+        label.textContent = langMap[langMatch[1]] || langMatch[1].toUpperCase();
+        pre.parentElement.appendChild(label);
+        // Shift copy button to avoid overlapping label
+        btn.style.right = '8px';
+      }
+    }
+  });
+
+  // ---- Reading Time on Section Headings ----
+  document.querySelectorAll('.section h2, section h2').forEach(h2 => {
+    const section = h2.closest('.section, section');
+    if (!section) return;
+    const text = section.innerText || '';
+    const words = text.trim().split(/\s+/).length;
+    const minutes = Math.max(1, Math.round(words / 200));
+    const badge = document.createElement('span');
+    badge.className = 'read-time';
+    badge.title = words + ' words';
+    badge.textContent = '~' + minutes + ' min read';
+    h2.appendChild(badge);
+  });
+
+  // ---- Sidebar Search ----
+  const searchInput = document.getElementById('sidebar-search');
+  const noResults = document.getElementById('search-no-results');
+
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      const query = searchInput.value.trim().toLowerCase();
+      const tocSections = document.querySelectorAll('.toc-section');
+      let totalVisible = 0;
+
+      tocSections.forEach(section => {
+        const links = section.querySelectorAll('.toc-link');
+        let visibleInSection = 0;
+        links.forEach(link => {
+          const text = link.textContent.toLowerCase();
+          const matches = !query || text.includes(query);
+          link.classList.toggle('search-hidden', !matches);
+          if (matches) visibleInSection++;
+        });
+        // Hide section title if no links visible (except "Getting Started" which has roadmap)
+        section.classList.toggle('search-empty', visibleInSection === 0);
+        totalVisible += visibleInSection;
+      });
+
+      if (noResults) noResults.style.display = (query && totalVisible === 0) ? 'block' : 'none';
+    });
+
+    // Clear search on Escape
+    searchInput.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        searchInput.value = '';
+        searchInput.dispatchEvent(new Event('input'));
+      }
+    });
+  }
+
+  // ---- Role Selector — actually filter/highlight content ----
+  const roleSections = {
+    fresher: ['linux','networking','git','cicd','docker','kubernetes','projects','cheatsheets','errors','resume'],
+    mid:     ['git','cicd','docker','kubernetes','cloud','terraform','ansible','monitoring','devsecops','setup1','setup2','projects'],
+    senior:  ['kubernetes','cloud','terraform','monitoring','devsecops','sysdesign','k8s-advanced','istio','sre','setup3','setup4','project-serverless','project-devsecops-pipeline','cost-optimization','k8s-security'],
+    all:     []
   };
-  console.log(msg[role]);
-}
+  window.setRole = function(role) {
+    // Update button styles
+    document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+
+    const allSects = document.querySelectorAll('[id]');
+    if (role === 'all') {
+      allSects.forEach(s => {
+        s.classList.remove('role-highlighted', 'role-dimmed');
+      });
+      return;
+    }
+
+    const relevant = roleSections[role] || [];
+    allSects.forEach(s => {
+      if (!s.id || s.tagName === 'INPUT' || s.tagName === 'BUTTON') return;
+      if (relevant.includes(s.id)) {
+        s.classList.add('role-highlighted');
+        s.classList.remove('role-dimmed');
+      } else {
+        s.classList.add('role-dimmed');
+        s.classList.remove('role-highlighted');
+      }
+    });
+
+    // Scroll to first highlighted section
+    const first = relevant[0] && document.getElementById(relevant[0]);
+    if (first) first.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  // ---- Scroll event handler ----
+  window.addEventListener('scroll', () => {
+    updateProgress();
+    updateScrollTop();
+  }, { passive: true });
+
+  // Initial calls
+  updateProgress();
+  updateScrollTop();
+
+})();
 </script>
+<button class="scroll-top" id="scroll-top" title="Back to top" aria-label="Scroll to top">↑</button>
 </body>
 </html>
