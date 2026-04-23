@@ -576,7 +576,213 @@ spec:
         averageValue: 400Mi
 </code></pre>
           <span class="lang-label">yaml</span><button class="copy-btn">Copy</button></div>
-      </div>
+        <h3>ConfigMaps &amp; Secrets</h3>
+        <div class="pre-wrap"><pre><code># ── ConfigMap: non-sensitive config ──
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  NODE_ENV: "production"
+  LOG_LEVEL: "info"
+  config.yaml: |
+    database:
+      host: postgres-svc
+      port: 5432
+
+# ── Secret: sensitive data (base64-encoded) ──
+apiVersion: v1
+kind: Secret
+metadata:
+  name: db-secret
+type: Opaque
+stringData:                     # stringData auto-encodes to base64
+  DB_PASSWORD: "my-secure-pass"
+  DB_URL: "postgresql://user:pass@host:5432/db"
+
+# ── Use in pod ──
+env:
+- name: NODE_ENV
+  valueFrom:
+    configMapKeyRef: { name: app-config, key: NODE_ENV }
+- name: DB_PASSWORD
+  valueFrom:
+    secretKeyRef: { name: db-secret, key: DB_PASSWORD }
+
+# ── Mount as file ──
+volumes:
+- name: config-vol
+  configMap: { name: app-config }
+volumeMounts:
+- name: config-vol
+  mountPath: /etc/config
+  readOnly: true</code></pre>
+          <span class="lang-label">yaml</span><button class="copy-btn">Copy</button></div>
+
+        <h3>RBAC — Role-Based Access Control</h3>
+        <div class="pre-wrap"><pre><code># ── ServiceAccount ── identity for pods
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: webapp-sa
+  namespace: production
+
+# ── Role ── namespace-scoped permissions
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: pod-reader
+  namespace: production
+rules:
+- apiGroups: [""]
+  resources: ["pods", "pods/log"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "list"]
+
+# ── ClusterRole ── cluster-wide permissions
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: node-reader
+rules:
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["get", "list", "watch"]
+
+# ── RoleBinding ── attach role to subject
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: webapp-pod-reader
+  namespace: production
+subjects:
+- kind: ServiceAccount
+  name: webapp-sa
+  namespace: production
+roleRef:
+  kind: Role
+  name: pod-reader
+  apiGroup: rbac.authorization.k8s.io
+
+# ── Check permissions ──
+kubectl auth can-i list pods --as system:serviceaccount:production:webapp-sa
+kubectl auth can-i "*" "*"  # check if you have admin</code></pre>
+          <span class="lang-label">yaml</span><button class="copy-btn">Copy</button></div>
+
+        <h3>PersistentVolumes &amp; StatefulSets</h3>
+        <div class="pre-wrap"><pre><code># ── StatefulSet (for databases, Kafka, Zookeeper) ──
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+spec:
+  serviceName: "postgres"
+  replicas: 1
+  selector:
+    matchLabels: { app: postgres }
+  template:
+    metadata:
+      labels: { app: postgres }
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15
+        env:
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef: { name: pg-secret, key: password }
+        volumeMounts:
+        - name: pgdata
+          mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+  - metadata:
+      name: pgdata
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 20Gi
+      storageClassName: gp3           # EBS gp3 on AWS
+
+# Pods are named sequentially: postgres-0, postgres-1
+# Each gets its own PVC: pgdata-postgres-0, pgdata-postgres-1
+# Deletion order is reverse: postgres-1 first, then postgres-0</code></pre>
+          <span class="lang-label">yaml</span><button class="copy-btn">Copy</button></div>
+
+        <h3>NetworkPolicy — Micro-Segmentation</h3>
+        <div class="pre-wrap"><pre><code"># Allow only frontend pods to reach backend, block everything else
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: backend-allow-frontend
+  namespace: production
+spec:
+  podSelector:
+    matchLabels: { app: backend }       # applies TO backend pods
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels: { app: frontend }  # only from frontend pods
+    ports:
+    - protocol: TCP
+      port: 3000
+  egress:
+  - to:
+    - podSelector:
+        matchLabels: { app: postgres }
+    ports:
+    - protocol: TCP
+      port: 5432
+  - to: []                              # allow DNS (UDP 53)
+    ports:
+    - protocol: UDP
+      port: 53</code></pre>
+          <span class="lang-label">yaml</span><button class="copy-btn">Copy</button></div>
+
+        <h3>Jobs &amp; CronJobs</h3>
+        <div class="pre-wrap"><pre><code># ── Job ── run to completion once
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-migrate
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: migrate
+        image: myapp:1.0
+        command: ["node", "db/migrate.js"]
+  backoffLimit: 3              # retry 3 times on failure
+  activeDeadlineSeconds: 300   # fail if not done in 5 min
+
+# ── CronJob ── scheduled jobs
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: daily-backup
+spec:
+  schedule: "0 2 * * *"        # 2am daily
+  concurrencyPolicy: Forbid    # dont run if previous still running
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: backup
+            image: myapp:1.0
+            command: ["/scripts/backup.sh"]</code></pre>
+          <span class="lang-label">yaml</span><button class="copy-btn">Copy</button></div>
+      
+</div>
     </div>
 
     <!-- D. CLOUD/AWS -->
@@ -647,7 +853,147 @@ aws iam create-role --role-name ec2-s3-role \
   --assume-role-policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"ec2.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
 </code></pre>
           <span class="lang-label">json</span><button class="copy-btn">Copy</button></div>
-      </div>
+        <h3>Route53 — DNS Management</h3>
+        <div class="pre-wrap"><pre><code"># Record types you MUST know
+A     → hostname to IPv4         (api.example.com → 54.1.2.3)
+AAAA  → hostname to IPv6
+CNAME → hostname to hostname     (www → api.example.com)   [cannot be root domain]
+ALIAS → hostname to AWS resource (example.com → ALB DNS)   [can be root domain]
+MX    → mail servers
+TXT   → verification, SPF, DKIM
+
+# ── Routing Policies ──
+# Simple        — single record
+# Weighted      — 70% to v1, 30% to v2 (canary deployments)
+# Latency       — route to region with lowest latency for user
+# Failover      — primary + secondary (health check based)
+# Geolocation   — US users → US servers, EU users → EU servers
+# Health checks — Route53 monitors endpoints, removes unhealthy from DNS
+
+# Terraform example: weighted record for canary
+resource "aws_route53_record" "api_v1" {
+  zone_id = data.aws_route53_zone.main.zone_id
+  name    = "api.example.com"
+  type    = "A"
+  set_identifier = "v1"
+  weighted_routing_policy { weight = 90 }
+  alias {
+    name                   = aws_lb.v1.dns_name
+    zone_id                = aws_lb.v1.zone_id
+    evaluate_target_health = true
+  }
+}</code></pre>
+          <span class="lang-label">hcl</span><button class="copy-btn">Copy</button></div>
+
+        <h3>AWS Lambda — Serverless Functions</h3>
+        <div class="pre-wrap"><pre><code"># Lambda basics
+# Max timeout: 15 min | Max memory: 10GB | Concurrency: 1000 default
+
+# Simple Lambda function (Python)
+import json
+import boto3
+
+def lambda_handler(event, context):
+    print(f"Event: {json.dumps(event)}")
+    
+    # Process SQS messages
+    for record in event.get("Records", []):
+        body = json.loads(record["body"])
+        process_message(body)
+    
+    return {"statusCode": 200, "body": "OK"}
+
+# ── Common triggers ──
+# API Gateway  → HTTP API (REST-like serverless API)
+# SQS          → process messages from queue
+# S3           → run when file uploaded
+# EventBridge  → scheduled (like cron) or event-driven
+# DynamoDB Streams → react to table changes
+
+# ── Terraform: Lambda function ──
+resource "aws_lambda_function" "api" {
+  function_name = "my-api"
+  role          = aws_iam_role.lambda.arn
+  handler       = "index.handler"
+  runtime       = "python3.12"
+  filename      = "lambda.zip"
+  timeout       = 30
+  memory_size   = 512
+
+  environment {
+    variables = {
+      TABLE_NAME = aws_dynamodb_table.main.name
+    }
+  }
+}</code></pre>
+          <span class="lang-label">python</span><button class="copy-btn">Copy</button></div>
+
+        <h3>CloudWatch — Monitoring &amp; Logs</h3>
+        <div class="pre-wrap"><pre><code"># ── Log groups ──
+aws logs describe-log-groups
+aws logs tail /aws/lambda/my-function --follow   # live Lambda logs
+aws logs filter-log-events --log-group-name /app/prod --filter-pattern "ERROR"
+
+# ── Metric alarms ──
+# Alarm: notify if EC2 CPU > 80% for 5 min
+resource "aws_cloudwatch_metric_alarm" "cpu_high" {
+  alarm_name          = "ec2-cpu-high"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/EC2"
+  period              = 120
+  statistic           = "Average"
+  threshold           = 80
+  alarm_actions       = [aws_sns_topic.alerts.arn]
+  dimensions = { InstanceId = aws_instance.app.id }
+}
+
+# ── Log Insights query ──
+# Find all errors in last hour:
+fields @timestamp, @message
+| filter @message like /ERROR/
+| sort @timestamp desc
+| limit 100</code></pre>
+          <span class="lang-label">hcl</span><button class="copy-btn">Copy</button></div>
+
+        <h3>ECR — Elastic Container Registry</h3>
+        <div class="pre-wrap"><pre><code"># Push image to ECR
+ACCOUNT=123456789
+REGION=us-east-1
+REPO=myapp
+
+# 1. Authenticate Docker to ECR
+aws ecr get-login-password --region $REGION | \
+  docker login --username AWS --password-stdin ${ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com
+
+# 2. Build and tag
+docker build -t myapp:latest .
+docker tag myapp:latest ${ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com/${REPO}:latest
+
+# 3. Push
+docker push ${ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com/${REPO}:latest
+
+# ── Lifecycle policy (auto-delete old images) ──
+resource "aws_ecr_lifecycle_policy" "main" {
+  repository = aws_ecr_repository.myapp.name
+  policy = jsonencode({
+    rules = [{
+      rulePriority = 1
+      description  = "Keep only 10 tagged images"
+      selection = {
+        tagStatus   = "tagged"
+        tagPrefixList = ["v"]
+        countType   = "imageCountMoreThan"
+        countNumber = 10
+      }
+      action = { type = "expire" }
+    }]
+  })
+}</code></pre>
+          <span class="lang-label">bash</span><button class="copy-btn">Copy</button></div>
+      
+</div>
     </div>
 
     <!-- E. TERRAFORM -->
@@ -750,7 +1096,120 @@ module "vpc" {
 }
 </code></pre>
           <span class="lang-label">hcl</span><button class="copy-btn">Copy</button></div>
-      </div>
+        <h3>for_each &amp; count — Loops in Terraform</h3>
+        <div class="pre-wrap"><pre><code"># ── count: create N copies ──
+resource "aws_instance" "web" {
+  count         = 3
+  ami           = "ami-0abcdef1234567890"
+  instance_type = "t3.micro"
+  tags = { Name = "web-${count.index + 1}" }
+}
+
+# Reference: aws_instance.web[0].id, aws_instance.web[*].id
+
+# ── for_each: create from map or set (preferred over count) ──
+variable "environments" {
+  default = {
+    staging    = "t3.micro"
+    production = "t3.large"
+  }
+}
+
+resource "aws_instance" "env" {
+  for_each      = var.environments
+  ami           = data.aws_ami.latest.id
+  instance_type = each.value
+  tags = { Name = each.key, Environment = each.key }
+}
+
+# Reference: aws_instance.env["production"].id
+
+# ── for expression: transform collections ──
+locals {
+  # Map from list: ["a", "b"] → {"a" = "a", "b" = "b"}
+  sg_map = { for s in var.security_groups : s => s }
+  
+  # Filter: only production instances
+  prod_instances = { for k, v in aws_instance.env : k => v if k == "production" }
+}
+
+# ── Dynamic blocks: avoid repetition ──
+resource "aws_security_group" "web" {
+  name = "web-sg"
+
+  dynamic "ingress" {
+    for_each = [80, 443, 8080]
+    content {
+      from_port   = ingress.value
+      to_port     = ingress.value
+      protocol    = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+    }
+  }
+}</code></pre>
+          <span class="lang-label">hcl</span><button class="copy-btn">Copy</button></div>
+
+        <h3>Workspaces — Multi-Environment</h3>
+        <div class="pre-wrap"><pre><code"># Workspaces separate state per environment
+terraform workspace list               # list workspaces
+terraform workspace new staging        # create staging workspace
+terraform workspace select production  # switch to production
+terraform workspace show               # current workspace
+
+# Use workspace in config
+locals {
+  instance_type = {
+    default    = "t3.micro"
+    staging    = "t3.small"
+    production = "t3.large"
+  }
+}
+
+resource "aws_instance" "app" {
+  instance_type = local.instance_type[terraform.workspace]
+}
+
+# State files stored separately:
+# s3://my-bucket/env:/staging/terraform.tfstate
+# s3://my-bucket/env:/production/terraform.tfstate
+
+# ── Locals ── computed values (avoid repetition) ──
+locals {
+  common_tags = {
+    Project     = "myapp"
+    Environment = terraform.workspace
+    ManagedBy   = "terraform"
+    Owner       = "platform-team"
+  }
+}
+
+resource "aws_s3_bucket" "app" {
+  bucket = "myapp-${terraform.workspace}-assets"
+  tags   = local.common_tags
+}</code></pre>
+          <span class="lang-label">hcl</span><button class="copy-btn">Copy</button></div>
+
+        <h3>Terraform lifecycle &amp; depends_on</h3>
+        <div class="pre-wrap"><pre><code"># ── lifecycle ── control create/destroy behavior
+resource "aws_instance" "app" {
+  ami           = data.aws_ami.latest.id
+  instance_type = "t3.micro"
+
+  lifecycle {
+    create_before_destroy = true   # create new before destroying old
+    prevent_destroy       = true   # refuse to destroy (safety for prod DBs)
+    ignore_changes        = [ami]  # ignore if AMI changes (auto-patch scenario)
+  }
+}
+
+# ── depends_on ── explicit dependency (usually automatic)
+resource "aws_ecs_service" "app" {
+  depends_on = [aws_iam_role_policy_attachment.ecs_exec]
+  # ensures IAM policy is attached before ECS service is created
+}</code></pre>
+          <span class="lang-label">hcl</span><button class="copy-btn">Copy</button></div>
+      
+</div>
     </div>
 
     <!-- F. ANSIBLE -->
@@ -833,7 +1292,102 @@ ansible-playbook deploy.yml --ask-vault-pass
 ansible-playbook deploy.yml --vault-password-file ~/.vault_pass
 </code></pre>
           <span class="lang-label">bash</span><button class="copy-btn">Copy</button></div>
-      </div>
+        <h3>Ansible Roles Structure</h3>
+        <div class="pre-wrap"><pre><code"># Create a role scaffold
+ansible-galaxy role init nginx
+
+# Directory structure:
+roles/nginx/
+├── defaults/main.yml    # default variables (lowest priority)
+├── vars/main.yml        # role variables (higher priority than defaults)
+├── tasks/main.yml       # main task file
+├── handlers/main.yml    # handlers triggered by notify
+├── templates/           # Jinja2 templates (.j2 files)
+├── files/               # static files to copy
+├── meta/main.yml        # role metadata, dependencies
+└── README.md
+
+# Use role in playbook
+- name: Configure web servers
+  hosts: webservers
+  roles:
+    - role: nginx
+      vars:
+        nginx_port: 8080</code></pre>
+          <span class="lang-label">bash</span><button class="copy-btn">Copy</button></div>
+
+        <h3>Ansible Galaxy — Reuse Community Roles</h3>
+        <div class="pre-wrap"><pre><code"># requirements.yml
+roles:
+  - name: geerlingguy.docker
+    version: "6.1.0"
+  - name: geerlingguy.nodejs
+    version: "6.0.0"
+  - src: https://github.com/myorg/my-role.git
+    version: main
+    name: my-custom-role
+
+collections:
+  - name: community.general
+    version: ">=7.0.0"
+  - name: amazon.aws
+    version: ">=6.0.0"
+
+# Install from requirements
+ansible-galaxy install -r requirements.yml
+ansible-galaxy collection install -r requirements.yml</code></pre>
+          <span class="lang-label">yaml</span><button class="copy-btn">Copy</button></div>
+
+        <h3>Jinja2 Templates &amp; Conditions</h3>
+        <div class="pre-wrap"><pre><code"># tasks/main.yml — conditionals, register, loops
+
+# ── Register output of a task ──
+- name: Check if app binary exists
+  stat:
+    path: /opt/myapp/bin/myapp
+  register: app_binary
+
+- name: Download app binary
+  get_url:
+    url: "https://releases.example.com/myapp-{{ app_version }}"
+    dest: /opt/myapp/bin/myapp
+    mode: '0755'
+  when: not app_binary.stat.exists   # only if not found
+
+# ── Loop over items ──
+- name: Install required packages
+  apt:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - git
+    - curl
+    - unzip
+    - jq
+
+# ── Notify handlers ──
+- name: Copy nginx config
+  template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
+  notify: reload nginx           # triggers handler only if task changed
+
+# handlers/main.yml
+- name: reload nginx
+  service:
+    name: nginx
+    state: reloaded
+
+# ── Jinja2 template: templates/nginx.conf.j2 ──
+# worker_processes {{ ansible_processor_vcpus }};
+# server_name {{ inventory_hostname }};
+# listen {{ nginx_port | default(80) }};
+# {% for host in groups['webservers'] %}
+#   server {{ hostvars[host]['ansible_host'] }}:3000;
+# {% endfor %}</code></pre>
+          <span class="lang-label">yaml</span><button class="copy-btn">Copy</button></div>
+      
+</div>
     </div>
 
 
@@ -1272,7 +1826,70 @@ ALERT HighErrorRate
   ANNOTATIONS { summary = "Error rate above 5%" }
 </code></pre>
           <span class="lang-label">promql</span><button class="copy-btn">Copy</button></div>
-      </div>
+        <h3>SLI / SLO / SLA — The Reliability Framework</h3>
+        <table>
+          <tr><th>Term</th><th>Definition</th><th>Example</th></tr>
+          <tr><td>SLI (Indicator)</td><td>Quantitative measure of service behavior</td><td>% of requests with latency &lt; 200ms</td></tr>
+          <tr><td>SLO (Objective)</td><td>Target value for SLI — your reliability goal</td><td>99.5% of requests respond in &lt; 200ms</td></tr>
+          <tr><td>SLA (Agreement)</td><td>Contract with customer — usually weaker than SLO</td><td>99% uptime guaranteed in contract</td></tr>
+          <tr><td>Error Budget</td><td>1 - SLO — how much unreliability you can afford</td><td>0.5% → 43 min downtime/month</td></tr>
+        </table>
+        <div class="pre-wrap"><pre><code"># Error budget math
+# SLO = 99.9% → error budget = 0.1% per month
+# 0.1% of 43,800 min/month = 43.8 min allowed downtime
+
+# Typical SLO stack:
+# Availability: 99.9% of health checks pass
+# Latency:      95% of requests < 100ms, 99% < 500ms
+# Error rate:   < 0.1% 5xx responses in 5-minute window
+
+# PromQL: availability SLI
+# (total_requests - error_requests) / total_requests
+1 - (sum(rate(http_requests_total{status=~"5.."}[30d])) / sum(rate(http_requests_total[30d])))</code></pre>
+          <span class="lang-label">promql</span><button class="copy-btn">Copy</button></div>
+
+        <h3>Alertmanager — Alert Routing</h3>
+        <div class="pre-wrap"><pre><code"># alertmanager.yml
+global:
+  slack_api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+  smtp_smarthost: 'smtp.gmail.com:587'
+
+route:
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  receiver: 'slack-general'
+  routes:
+  - match:
+      severity: critical
+    receiver: pagerduty
+    continue: true    # also send to parent receiver
+  - match:
+      team: platform
+    receiver: slack-platform
+
+receivers:
+- name: pagerduty
+  pagerduty_configs:
+  - service_key: 'YOUR_PD_KEY'
+    description: '{{ .GroupLabels.alertname }}: {{ .Annotations.summary }}'
+
+- name: slack-general
+  slack_configs:
+  - channel: '#alerts'
+    title: '{{ .GroupLabels.alertname }}'
+    text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+
+inhibit_rules:
+- source_match:
+    severity: critical
+  target_match:
+    severity: warning
+  equal: ['alertname', 'cluster']   # suppress warnings if critical fires</code></pre>
+          <span class="lang-label">yaml</span><button class="copy-btn">Copy</button></div>
+      
+</div>
     </div>
 
     <!-- H. ELK -->

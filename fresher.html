@@ -497,7 +497,375 @@ crontab -l   # list crontabs
 0 0 1 * *  /monthly-report.sh    # first day of each month
 </code></pre>
           <span class="lang-label">bash</span><button class="copy-btn">Copy</button></div>
-      </div>
+        <h3>User &amp; Group Management</h3>
+        <div class="pre-wrap"><pre><code># ── User management ──
+useradd -m -s /bin/bash alice     # create user with home dir + bash shell
+useradd -m -G sudo,docker alice   # add to groups at creation
+passwd alice                      # set password
+usermod -aG docker alice          # add existing user to docker group (append)
+usermod -s /bin/zsh alice         # change shell
+userdel -r alice                  # delete user AND home directory
+
+# ── Group management ──
+groupadd devops
+groupdel devops
+groups alice                      # list groups for user
+id alice                          # uid, gid, all groups
+
+# ── Important files ──
+cat /etc/passwd                   # user info: username:x:uid:gid:comment:home:shell
+cat /etc/group                    # group info: groupname:x:gid:members
+cat /etc/shadow                   # password hashes (root only)
+
+# ── sudo configuration ──
+visudo                            # safely edit /etc/sudoers
+# Add in /etc/sudoers:
+alice ALL=(ALL:ALL) ALL           # full sudo for alice
+deploy ALL=(ALL) NOPASSWD: /usr/bin/docker   # passwordless docker only
+
+# ── Switch user ──
+su - alice                        # switch to alice with her env
+sudo -u alice command             # run as alice without switching</code></pre>
+          <span class="lang-label">bash</span><button class="copy-btn">Copy</button></div>
+
+        <h3>Package Management</h3>
+        <table>
+          <tr><th>Action</th><th>apt (Ubuntu/Debian)</th><th>yum/dnf (RHEL/CentOS)</th></tr>
+          <tr><td>Update index</td><td><code>apt update</code></td><td><code>dnf check-update</code></td></tr>
+          <tr><td>Install</td><td><code>apt install nginx</code></td><td><code>dnf install nginx</code></td></tr>
+          <tr><td>Remove</td><td><code>apt remove nginx</code></td><td><code>dnf remove nginx</code></td></tr>
+          <tr><td>Purge config</td><td><code>apt purge nginx</code></td><td><code>dnf remove --purge</code></td></tr>
+          <tr><td>Upgrade all</td><td><code>apt upgrade -y</code></td><td><code>dnf upgrade -y</code></td></tr>
+          <tr><td>Search</td><td><code>apt search nginx</code></td><td><code>dnf search nginx</code></td></tr>
+          <tr><td>Show info</td><td><code>apt show nginx</code></td><td><code>dnf info nginx</code></td></tr>
+          <tr><td>List installed</td><td><code>dpkg -l | grep nginx</code></td><td><code>rpm -qa | grep nginx</code></td></tr>
+          <tr><td>Autoremove</td><td><code>apt autoremove</code></td><td><code>dnf autoremove</code></td></tr>
+        </table>
+        <div class="pre-wrap"><pre><code># Install without interactive prompts (for scripts)
+DEBIAN_FRONTEND=noninteractive apt install -y nginx
+
+# Add a PPA (Ubuntu)
+add-apt-repository ppa:deadsnakes/ppa
+apt update && apt install python3.12
+
+# Add a yum repo
+dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo</code></pre>
+          <span class="lang-label">bash</span><button class="copy-btn">Copy</button></div>
+
+        <h3>Text Processing — grep / awk / sed / cut</h3>
+        <div class="pre-wrap"><pre><code># ── grep ── search inside files
+grep "error" /var/log/app.log             # basic search
+grep -i "error" app.log                   # case-insensitive
+grep -r "TODO" ./src/                     # recursive search
+grep -n "fail" app.log                    # show line numbers
+grep -v "info" app.log                    # invert (exclude matches)
+grep -E "error|warn|fatal" app.log        # extended regex (multiple patterns)
+grep -c "error" app.log                   # count matches
+grep -A 3 -B 2 "exception" app.log        # 3 lines after, 2 lines before
+grep --color "error" app.log              # highlight matches
+
+# ── awk ── column/field processing
+awk '{print $1}' file.txt                 # print first column
+awk '{print $1, $3}' file.txt             # columns 1 and 3
+awk -F: '{print $1}' /etc/passwd          # custom delimiter (:)
+awk '{sum += $1} END {print sum}' nums    # sum first column
+awk '/error/ {print NR, $0}' app.log      # line number + full line for errors
+ps aux | awk '{print $1, $2, $3}' | head  # process user, pid, cpu
+
+# ── sed ── stream editor (find & replace)
+sed 's/foo/bar/' file.txt                 # replace first occurrence per line
+sed 's/foo/bar/g' file.txt                # replace ALL occurrences
+sed -i 's/foo/bar/g' file.txt             # edit file IN PLACE
+sed -n '10,20p' file.txt                  # print lines 10-20
+sed '/^#/d' config.txt                    # delete comment lines
+sed 's/^/  /' file.txt                    # add 2-space indent to each line
+
+# ── cut / sort / uniq / wc ──
+cut -d: -f1 /etc/passwd                   # cut field 1, delimiter :
+cut -c1-10 file.txt                       # cut characters 1-10
+sort file.txt                             # alphabetical sort
+sort -n numbers.txt                       # numeric sort
+sort -rn numbers.txt                      # reverse numeric sort
+sort -k2 file.txt                         # sort by column 2
+uniq file.txt                             # remove adjacent duplicates
+sort file.txt | uniq -c | sort -rn        # count + rank occurrences
+wc -l file.txt                            # count lines
+wc -w file.txt                            # count words</code></pre>
+          <span class="lang-label">bash</span><button class="copy-btn">Copy</button></div>
+
+        <h3>systemd — Service Management</h3>
+        <div class="pre-wrap"><pre><code># ── Control services ──
+sudo systemctl start nginx          # start
+sudo systemctl stop nginx           # stop
+sudo systemctl restart nginx        # stop + start
+sudo systemctl reload nginx         # reload config without restart
+sudo systemctl enable nginx         # start at boot
+sudo systemctl disable nginx        # do not start at boot
+sudo systemctl status nginx         # current status + last logs
+sudo systemctl is-active nginx      # returns "active" or "inactive"
+sudo systemctl is-enabled nginx     # returns "enabled" or "disabled"
+
+# ── List services ──
+systemctl list-units --type=service             # all running services
+systemctl list-units --type=service --state=failed  # failed services
+
+# ── View logs ──
+journalctl -u nginx                 # all logs for nginx
+journalctl -u nginx -f              # follow logs (like tail -f)
+journalctl -u nginx --since "1 hour ago"
+journalctl -u nginx -n 50           # last 50 lines
+journalctl -p err -u nginx          # only error-level logs
+journalctl --disk-usage             # how much log space is used
+
+# ── Write your own service ──
+# /etc/systemd/system/myapp.service
+[Unit]
+Description=My Application
+After=network.target
+
+[Service]
+Type=simple
+User=appuser
+WorkingDirectory=/opt/myapp
+ExecStart=/usr/bin/node /opt/myapp/server.js
+Restart=always
+RestartSec=5
+Environment=NODE_ENV=production
+EnvironmentFile=/opt/myapp/.env
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+
+# Reload systemd and enable
+sudo systemctl daemon-reload
+sudo systemctl enable --now myapp</code></pre>
+          <span class="lang-label">ini</span><button class="copy-btn">Copy</button></div>
+
+        <h3>Environment Variables &amp; PATH</h3>
+        <div class="pre-wrap"><pre><code># ── View and set variables ──
+printenv                           # print all env vars
+echo $PATH                         # print PATH variable
+echo $HOME $USER $SHELL            # common vars
+
+# Set in current session (temporary)
+export MY_VAR="hello"
+export DB_HOST="localhost"
+
+# Set permanently (add to ~/.bashrc or ~/.bash_profile)
+echo 'export DB_HOST="localhost"' >> ~/.bashrc
+source ~/.bashrc                   # reload without logging out
+
+# ── PATH management ──
+# Add /opt/myapp/bin to PATH permanently
+echo 'export PATH="$PATH:/opt/myapp/bin"' >> ~/.bashrc
+source ~/.bashrc
+which mycommand                    # show full path of a command
+type mycommand                     # similar, shows if alias/built-in/file
+
+# ── System-wide env files (load order) ──
+# /etc/environment    — simplest: KEY=VALUE, no export, no scripts
+# /etc/profile        — system-wide for login shells
+# /etc/profile.d/*.sh — drop-in scripts for login shells
+# ~/.bash_profile      — user login shell
+# ~/.bashrc           — user interactive non-login shell (SSH sessions use this)
+
+# ── .env file pattern (for apps) ──
+# .env file:
+# DB_HOST=localhost
+# DB_PORT=5432
+# API_KEY=secret123
+set -a; source .env; set +a       # load .env into current shell</code></pre>
+          <span class="lang-label">bash</span><button class="copy-btn">Copy</button></div>
+
+        <h3>Process Signals</h3>
+        <table>
+          <tr><th>Signal</th><th>Number</th><th>Meaning</th><th>How to send</th></tr>
+          <tr><td>SIGTERM</td><td>15</td><td>Graceful shutdown (default kill)</td><td><code>kill PID</code></td></tr>
+          <tr><td>SIGKILL</td><td>9</td><td>Force kill — cannot be caught/ignored</td><td><code>kill -9 PID</code></td></tr>
+          <tr><td>SIGINT</td><td>2</td><td>Interrupt (Ctrl+C)</td><td>Keyboard</td></tr>
+          <tr><td>SIGHUP</td><td>1</td><td>Reload config (many daemons)</td><td><code>kill -HUP PID</code></td></tr>
+          <tr><td>SIGSTOP</td><td>19</td><td>Pause process (Ctrl+Z)</td><td>Keyboard</td></tr>
+          <tr><td>SIGCONT</td><td>18</td><td>Resume paused process</td><td><code>kill -CONT PID</code></td></tr>
+        </table>
+        <div class="pre-wrap"><pre><code># Find and kill processes
+ps aux | grep nginx                # find nginx processes
+pgrep nginx                        # just the PIDs
+pkill nginx                        # kill all by name (SIGTERM)
+pkill -9 nginx                     # force kill all by name
+kill $(pgrep nginx)                # alternative pattern
+
+# Background jobs
+long-command &                     # run in background
+jobs                               # list background jobs
+fg 1                               # bring job 1 to foreground
+bg 1                               # resume job 1 in background
+nohup long-command &               # run immune to hangup (survive logout)
+
+# Trap signals in scripts
+trap "echo Caught SIGINT; cleanup; exit 1" SIGINT SIGTERM
+trap "rm -f /tmp/lockfile" EXIT   # always run on script exit</code></pre>
+          <span class="lang-label">bash</span><button class="copy-btn">Copy</button></div>
+
+        <h3>Compression &amp; Archives</h3>
+        <div class="pre-wrap"><pre><code># ── tar (most common in Linux) ──
+tar -czf archive.tar.gz /path/to/dir/    # compress (c=create, z=gzip, f=file)
+tar -cjf archive.tar.bz2 /path/to/dir/  # bzip2 (smaller, slower)
+tar -xzf archive.tar.gz                  # extract
+tar -xzf archive.tar.gz -C /dest/        # extract to specific dir
+tar -tzf archive.tar.gz                  # list contents without extracting
+tar -xzf archive.tar.gz specific-file   # extract single file
+
+# ── gzip / gunzip ──
+gzip file.txt          # compress: creates file.txt.gz, removes original
+gunzip file.txt.gz     # decompress
+gzip -k file.txt       # keep original (--keep)
+
+# ── zip / unzip (cross-platform) ──
+zip -r archive.zip dir/    # recursive zip
+unzip archive.zip          # extract
+unzip -l archive.zip       # list contents
+unzip archive.zip -d /dest # extract to destination
+
+# ── Backup pattern ──
+DATE=$(date +%Y%m%d)
+tar -czf "/backup/app-${DATE}.tar.gz" /opt/myapp
+find /backup -name "app-*.tar.gz" -mtime +30 -delete  # purge >30 days</code></pre>
+          <span class="lang-label">bash</span><button class="copy-btn">Copy</button></div>
+
+        <h3>Shell Scripting — Intermediate</h3>
+        <div class="pre-wrap"><pre><code>#!/bin/bash
+set -euo pipefail   # exit on error, undefined var, pipe failure
+
+# ── Arrays ──
+servers=("web01" "web02" "db01")
+echo "${servers[0]}"               # first element
+echo "${servers[@]}"               # all elements
+echo "${#servers[@]}"              # count (3)
+for s in "${servers[@]}"; do
+  echo "Checking $s..."
+  ssh "$s" "uptime"
+done
+
+# ── String operations ──
+str="hello-world.tar.gz"
+echo "${str^^}"                    # HELLO-WORLD.TAR.GZ (uppercase)
+echo "${str,,}"                    # hello-world.tar.gz (lowercase)
+echo "${#str}"                     # length: 19
+echo "${str%.*}"                   # remove last extension: hello-world.tar
+echo "${str%%.*}"                  # remove all after first dot: hello-world
+echo "${str#*-}"                   # remove up to first dash: world.tar.gz
+echo "${str/world/earth}"          # replace: hello-earth.tar.gz
+
+# ── Arithmetic ──
+x=10; y=3
+echo $((x + y))     # 13
+echo $((x % y))     # 1 (modulo)
+echo $((x ** y))    # 1000 (power)
+
+# ── Functions with return values ──
+check_port() {
+  local host=$1 port=$2
+  nc -z "$host" "$port" 2>/dev/null
+  return $?                        # 0=open, 1=closed
+}
+
+if check_port "localhost" 3306; then
+  echo "MySQL is up"
+else
+  echo "MySQL is down" >&2
+  exit 1
+fi
+
+# ── Read user input ──
+read -p "Enter environment [dev/prod]: " ENV
+read -s -p "Enter password: " PASS   # -s = silent (no echo)
+echo
+
+# ── Parse arguments ──
+while [[ "$#" -gt 0 ]]; do
+  case $1 in
+    -e|--env)   ENV="$2"; shift ;;
+    -v|--verbose) VERBOSE=1 ;;
+    *) echo "Unknown: $1"; exit 1 ;;
+  esac
+  shift
+done</code></pre>
+          <span class="lang-label">bash</span><button class="copy-btn">Copy</button></div>
+
+        <h3>Disk Management</h3>
+        <div class="pre-wrap"><pre><code># ── Disk usage ──
+df -h                              # filesystem usage (human-readable)
+df -h /var                         # specific filesystem
+du -sh /var/log/*                  # size of each item in /var/log
+du -sh * | sort -h                 # sort by size
+ncdu /var                          # interactive disk usage (install ncdu)
+
+# ── Block devices ──
+lsblk                              # list block devices (tree view)
+lsblk -f                           # include filesystem info
+fdisk -l                           # list partitions (root only)
+blkid                              # show UUID and filesystem type
+
+# ── Mount/unmount ──
+mount /dev/sdb1 /mnt/data          # mount a partition
+umount /mnt/data                   # unmount
+mount -t nfs server:/share /mnt    # mount NFS share
+
+# ── /etc/fstab — persistent mounts ──
+# UUID=abc123  /mnt/data  ext4  defaults  0  2
+# Format: device  mountpoint  fstype  options  dump  pass
+
+# ── Filesystem operations ──
+mkfs.ext4 /dev/sdb1               # format as ext4
+fsck /dev/sdb1                     # check/repair filesystem (unmounted!)
+tune2fs -l /dev/sda1              # show filesystem info
+
+# ── Symbolic &amp; Hard Links ──
+ln -s /opt/myapp/bin/myapp /usr/local/bin/myapp   # symlink (soft)
+ln source.txt hardlink.txt        # hard link (same inode)
+ls -la | grep ^l                   # list only symlinks
+readlink -f /path/to/symlink       # resolve symlink to real path</code></pre>
+          <span class="lang-label">bash</span><button class="copy-btn">Copy</button></div>
+
+        <h3>Firewall — UFW &amp; iptables</h3>
+        <div class="pre-wrap"><pre><code># ── UFW (Ubuntu Uncomplicated Firewall) ──
+sudo ufw status verbose           # show rules
+sudo ufw enable                   # enable firewall
+sudo ufw disable                  # disable
+
+sudo ufw allow 22/tcp             # allow SSH
+sudo ufw allow 80/tcp             # allow HTTP
+sudo ufw allow 443/tcp            # allow HTTPS
+sudo ufw allow from 10.0.0.0/24   # allow entire subnet
+sudo ufw deny 3306/tcp            # block MySQL from outside
+sudo ufw delete allow 80/tcp      # remove rule
+
+# ── iptables (lower level) ──
+iptables -L -n -v                  # list all rules with counts
+iptables -A INPUT -p tcp --dport 22 -j ACCEPT     # allow SSH in
+iptables -A INPUT -p tcp --dport 80 -j ACCEPT     # allow HTTP in
+iptables -A INPUT -j DROP          # drop everything else
+
+# ── Save/restore iptables ──
+iptables-save > /etc/iptables/rules.v4
+iptables-restore < /etc/iptables/rules.v4</code></pre>
+          <span class="lang-label">bash</span><button class="copy-btn">Copy</button></div>
+
+        <h3>Linux Troubleshooting Playbook</h3>
+        <table>
+          <tr><th>Symptom</th><th>First Commands</th><th>What to look for</th></tr>
+          <tr><td>Server slow</td><td><code>top / htop / uptime</code></td><td>Load average, CPU steal %, zombie processes</td></tr>
+          <tr><td>Disk full</td><td><code>df -h; du -sh /*</code></td><td>Find largest directories, /var/log common culprit</td></tr>
+          <tr><td>Service won't start</td><td><code>systemctl status svc; journalctl -u svc -n 50</code></td><td>Permission errors, port already in use, missing files</td></tr>
+          <tr><td>Port not listening</td><td><code>ss -tulpn | grep :PORT</code></td><td>Is process running? Is it bound to 127.0.0.1 vs 0.0.0.0?</td></tr>
+          <tr><td>Can't connect to server</td><td><code>ping; traceroute; curl -v; telnet host port</code></td><td>Network, firewall, service, DNS</td></tr>
+          <tr><td>High memory</td><td><code>free -h; ps aux --sort=-%mem | head</code></td><td>Top consumers, OOM killer in dmesg</td></tr>
+          <tr><td>Cron not running</td><td><code>crontab -l; grep CRON /var/log/syslog</code></td><td>Syntax errors, PATH issues, output not logged</td></tr>
+        </table>
+      
+</div>
     </div>
 
     <!-- ── B. NETWORKING ── -->
@@ -581,7 +949,57 @@ iptables -L                  # firewall rules
           <tr><td>502</td><td>Bad Gateway</td><td>Nginx can't reach app server</td></tr>
           <tr><td>503</td><td>Service Unavailable</td><td>Server overloaded or down</td></tr>
         </table>
-      </div>
+        <h3>IP Addressing &amp; CIDR</h3>
+        <div class="pre-wrap"><pre><code># CIDR notation: IP/prefix-length
+192.168.1.0/24   → 256 addresses  (.0 network, .255 broadcast, .1-.254 usable)
+10.0.0.0/16      → 65536 addresses
+10.0.0.0/8       → 16.7M addresses (class A private)
+
+# Common private ranges (RFC 1918):
+10.0.0.0/8       # large enterprise networks
+172.16.0.0/12    # Docker default bridge, medium networks
+192.168.0.0/16   # home networks
+
+# Subnetting quick math:
+# /24 → 2^(32-24) = 256 addresses
+# /25 → 128 addresses (split /24 in half)
+# /28 → 16 addresses (common for small subnets)
+# /32 → 1 address (single host)
+
+# ipcalc — subnet calculator
+ipcalc 192.168.1.0/24    # shows netmask, broadcast, range</code></pre>
+          <span class="lang-label">bash</span><button class="copy-btn">Copy</button></div>
+
+        <h3>curl — The DevOps HTTP Swiss Army Knife</h3>
+        <div class="pre-wrap"><pre><code># Basic GET
+curl https://api.example.com/health
+
+# With headers
+curl -H "Authorization: Bearer TOKEN" https://api.example.com/data
+curl -H "Content-Type: application/json" https://api.example.com
+
+# POST with JSON body
+curl -X POST -H "Content-Type: application/json" \
+     -d '{"name":"alice","role":"admin"}' \
+     https://api.example.com/users
+
+# Show response headers + body
+curl -v https://example.com              # verbose (shows TLS handshake)
+curl -I https://example.com             # headers only (HEAD request)
+curl -w "%{http_code}" -o /dev/null https://example.com  # just status code
+
+# Follow redirects, set timeout
+curl -L --max-time 10 https://example.com
+
+# Download file
+curl -O https://example.com/file.tar.gz
+curl -o output.tar.gz https://example.com/file.tar.gz
+
+# Test with retries (useful in scripts)
+curl --retry 3 --retry-delay 5 https://api.example.com/health</code></pre>
+          <span class="lang-label">bash</span><button class="copy-btn">Copy</button></div>
+      
+</div>
     </div>
 
     <!-- ── C. GIT ── -->
@@ -673,7 +1091,58 @@ git add app.py
 git commit -m "fix: resolve login attempts conflict"
 </code></pre>
           <span class="lang-label">bash</span><button class="copy-btn">Copy</button></div>
-      </div>
+        <h3>Git Internals &amp; Advanced Commands</h3>
+        <div class="pre-wrap"><pre><code># ── History inspection ──
+git log --oneline --graph --all --decorate  # full visual history
+git log --author="Alice" --since="1 week ago"
+git log -p filename                # show diff for each commit on file
+git blame filename                 # who changed each line + when
+git show abc123                    # show a specific commit's diff
+git shortlog -sn                   # contributor summary
+
+# ── Undo operations ──
+git reflog                         # SAFETY NET: log of all HEAD movements
+git reset --hard abc123            # go back to commit (LOCAL ONLY)
+git revert abc123                  # create new commit undoing abc123 (safe for shared)
+git cherry-pick abc123             # apply a specific commit to current branch
+
+# ── Stash ──
+git stash                          # save all uncommitted changes
+git stash push -m "WIP: login fix" # stash with description
+git stash list                     # list all stashes
+git stash pop                      # apply latest stash + remove from list
+git stash apply stash@{2}          # apply specific stash (keep in list)
+git stash drop stash@{0}           # delete a stash
+
+# ── Tagging releases ──
+git tag v1.0.0                     # lightweight tag
+git tag -a v1.0.0 -m "Release 1.0" # annotated tag (preferred)
+git push origin v1.0.0             # push tag to remote
+git push origin --tags             # push all tags
+
+# ── Clean up ──
+git clean -fd                      # remove untracked files and dirs
+git gc                             # garbage collect (optimize repo)
+git remote prune origin            # remove stale remote-tracking branches</code></pre>
+          <span class="lang-label">bash</span><button class="copy-btn">Copy</button></div>
+
+        <h3>Git Configuration &amp; Aliases</h3>
+        <div class="pre-wrap"><pre><code># Useful aliases (add to ~/.gitconfig)
+git config --global alias.st status
+git config --global alias.lg "log --oneline --graph --all --decorate"
+git config --global alias.last "log -1 HEAD"
+git config --global alias.unstage "reset HEAD --"
+git config --global alias.undo "reset --soft HEAD~1"  # undo last commit, keep changes
+
+# Set default branch name
+git config --global init.defaultBranch main
+
+# Credential caching (avoid typing password every time)
+git config --global credential.helper cache
+git config --global credential.helper "cache --timeout=3600"</code></pre>
+          <span class="lang-label">bash</span><button class="copy-btn">Copy</button></div>
+      
+</div>
     </div>
 
 
@@ -965,7 +1434,62 @@ docker compose down           # stop and remove
 docker compose down -v        # also remove volumes
 </code></pre>
           <span class="lang-label">yaml</span><button class="copy-btn">Copy</button></div>
-      </div>
+        <h3>Dockerfile Best Practices</h3>
+        <div class="pre-wrap"><pre><code"># ── Instruction order matters for cache ──
+FROM node:20-alpine
+WORKDIR /app
+
+# Copy package files FIRST (only invalidates cache when deps change)
+COPY package*.json ./
+RUN npm ci --only=production
+
+# Copy source LAST (changes every build but deps layer is cached)
+COPY . .
+
+# ── ARG vs ENV ──
+ARG BUILD_DATE         # only available during build
+ENV NODE_ENV=production  # persists in running container
+
+# ── HEALTHCHECK built into image ──
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+  CMD curl -f http://localhost:3000/health || exit 1
+
+# ── .dockerignore (always create this!) ──
+# .git
+# node_modules
+# *.log
+# .env
+# .env.*
+# coverage/
+# Dockerfile
+# .dockerignore
+
+# ── Labels (metadata) ──
+LABEL maintainer="team@company.com"
+LABEL version="1.0"
+LABEL org.opencontainers.image.source="https://github.com/org/repo"</code></pre>
+          <span class="lang-label">dockerfile</span><button class="copy-btn">Copy</button></div>
+
+        <h3>Docker Volumes — Persistent Storage</h3>
+        <table>
+          <tr><th>Type</th><th>Syntax</th><th>Use case</th></tr>
+          <tr><td>Named Volume</td><td><code>-v mydata:/app/data</code></td><td>DB data, managed by Docker</td></tr>
+          <tr><td>Bind Mount</td><td><code>-v /host/path:/container/path</code></td><td>Dev: hot-reload source code</td></tr>
+          <tr><td>tmpfs</td><td><code>--tmpfs /app/tmp</code></td><td>Sensitive temp data (RAM only)</td></tr>
+        </table>
+        <div class="pre-wrap"><pre><code># Volume commands
+docker volume create mydata
+docker volume ls
+docker volume inspect mydata
+docker volume rm mydata
+docker volume prune              # remove unused volumes
+
+# Backup a named volume
+docker run --rm -v mydata:/data -v $(pwd):/backup alpine \
+  tar czf /backup/mydata-backup.tar.gz /data</code></pre>
+          <span class="lang-label">bash</span><button class="copy-btn">Copy</button></div>
+      
+</div>
     </div>
 
     <!-- ── E. CI/CD BASICS ── -->
@@ -1060,7 +1584,63 @@ jobs:
           <tr><td>Runner</td><td>Machine that executes pipeline jobs</td></tr>
           <tr><td>Trigger</td><td>Event that starts pipeline (push, PR, schedule)</td></tr>
         </table>
-      </div>
+        <h3>GitHub Actions — Advanced Features</h3>
+        <div class="pre-wrap"><pre><code># ── Matrix builds ── test on multiple versions
+jobs:
+  test:
+    strategy:
+      matrix:
+        node: [18, 20, 22]
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - run: npm test
+
+# ── Caching ── speed up builds
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+# ── Artifacts ── pass files between jobs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: dist/
+
+  deploy:
+    needs: test
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-output
+          path: dist/
+
+# ── Secrets ── encrypted variables
+# Store in: Settings → Secrets → Actions
+# Use in workflow:
+      - run: |
+          echo "${{ secrets.DOCKER_TOKEN }}" | docker login -u user --password-stdin
+
+# ── Manual trigger with inputs ──
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        options: [staging, production]
+        required: true
+      dry-run:
+        type: boolean
+        default: false</code></pre>
+          <span class="lang-label">yaml</span><button class="copy-btn">Copy</button></div>
+      
+</div>
     </div>
 
     <!-- ── PROJECTS ── -->

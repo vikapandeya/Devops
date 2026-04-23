@@ -381,7 +381,101 @@ spec:
       kinds: ["Deployment", "StatefulSet"]
 </code></pre>
           <span class="lang-label">yaml</span><button class="copy-btn">Copy</button></div>
-      </div>
+        <h3>SBOM &amp; Supply Chain Security</h3>
+        <div class="pre-wrap"><pre><code"># SBOM = Software Bill of Materials
+# Lists ALL components in your software (direct + transitive deps)
+
+# Generate SBOM with Syft
+syft myapp:1.0 -o spdx-json > sbom.json
+syft myapp:1.0 -o cyclonedx-json > sbom-cyclone.json
+
+# Scan SBOM for vulnerabilities with Grype
+grype sbom:./sbom.json
+grype myapp:1.0            # directly scan image
+
+# ── Image Signing with Cosign (keyless) ──
+# Sign an image after push
+cosign sign ghcr.io/myorg/myapp:1.0
+
+# Verify signature
+cosign verify ghcr.io/myorg/myapp:1.0 \
+  --certificate-identity=https://github.com/myorg/myapp/.github/workflows/ci.yml@refs/heads/main \
+  --certificate-oidc-issuer=https://token.actions.githubusercontent.com
+
+# ── GitHub Actions: sign after push ──
+      - name: Sign container image
+        uses: sigstore/cosign-installer@v3
+      - run: cosign sign --yes $IMAGE
+        env:
+          COSIGN_EXPERIMENTAL: 1
+
+# ── Dependency review in PRs ──
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high</code></pre>
+          <span class="lang-label">bash</span><button class="copy-btn">Copy</button></div>
+
+        <h3>Policy-as-Code with OPA &amp; Conftest</h3>
+        <div class="pre-wrap"><pre><code"># OPA Rego policy: deny containers running as root
+package main
+
+deny[msg] {
+  input.kind == "Deployment"
+  container := input.spec.template.spec.containers[_]
+  not container.securityContext.runAsNonRoot
+  msg := sprintf("Container %v must set runAsNonRoot: true", [container.name])
+}
+
+deny[msg] {
+  input.kind == "Deployment"
+  container := input.spec.template.spec.containers[_]
+  not container.resources.limits
+  msg := sprintf("Container %v must set resource limits", [container.name])
+}
+
+# Test policy with conftest
+conftest test deployment.yaml --policy ./policies/
+
+# ── Integrate in CI ──
+      - name: Policy check
+        run: |
+          conftest test k8s/*.yaml --policy policies/ \
+            --output json | tee results.json
+          jq '.failures | length == 0' results.json</code></pre>
+          <span class="lang-label">rego</span><button class="copy-btn">Copy</button></div>
+
+        <h3>SAST &amp; DAST in Pipeline</h3>
+        <div class="pre-wrap"><pre><code"># SAST (Static Analysis Security Testing) — scan code/IaC
+# Semgrep — fast, rule-based SAST
+semgrep scan --config auto .          # auto-detect language rules
+semgrep scan --config p/owasp-top-ten .  # OWASP rules
+
+# Trivy — scan everything
+trivy image myapp:1.0                  # container vulnerabilities
+trivy fs .                             # filesystem/code
+trivy config ./terraform/              # IaC misconfigs
+trivy repo https://github.com/org/repo # remote repo
+
+# DAST (Dynamic Analysis) — test running application
+# OWASP ZAP baseline scan
+docker run -t owasp/zap2docker-stable zap-baseline.py \
+  -t https://staging.example.com -r zap-report.html
+
+# ── GitHub Actions security pipeline ──
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Trivy IaC scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: config
+          scan-ref: .
+          exit-code: 1
+          severity: HIGH,CRITICAL</code></pre>
+          <span class="lang-label">bash</span><button class="copy-btn">Copy</button></div>
+      
+</div>
     </div>
 
     <!-- B. SRE -->
@@ -448,7 +542,79 @@ kubectl patch ingress webapp-ingress -n production \
           <div class="arch-card"><div class="arch-icon">❌</div><h4>Errors</h4><p>Rate of failed requests. 5xx per minute, not absolute numbers.</p></div>
           <div class="arch-card"><div class="arch-icon">💾</div><h4>Saturation</h4><p>How "full" the service is. CPU queue, memory pressure, disk IO.</p></div>
         </div>
-      </div>
+        <h3>Error Budget Management</h3>
+        <div class="pre-wrap"><pre><code"># Error Budget Policy — what happens when budget is consumed
+
+# SLO: 99.9% availability → error budget: 43.8 min/month
+
+# Budget > 50% remaining:
+#   - Ship features normally
+#   - Any velocity acceptable
+
+# Budget 10%-50% remaining:
+#   - Review risky deployments
+#   - Require post-change monitoring window
+
+# Budget < 10% remaining:
+#   - Feature freeze — reliability work only
+#   - All changes require on-call approval
+#   - SRE team can veto deploys
+
+# Budget exhausted:
+#   - Full stop on features
+#   - Incident retrospective required
+#   - Root cause and remediation before resuming
+
+# Toil: repetitive, manual, automatable, tactical work
+# Target: < 50% of SRE time on toil
+# Measure: track toil hours per week per incident type
+# Reduce by: automation, runbooks, self-service tooling</code></pre>
+          <span class="lang-label">bash</span><button class="copy-btn">Copy</button></div>
+
+        <h3>Incident Runbook Template</h3>
+        <div class="pre-wrap"><pre><code"># ── Runbook: High API Error Rate ──
+## Alert: HighAPIErrorRate
+## Severity: P1
+## SLO Impact: Yes — consuming error budget
+
+## Symptoms
+- 5xx error rate > 5% for 2+ minutes
+- Users report intermittent failures
+
+## Immediate Actions (first 5 min)
+1. Check Grafana dashboard: https://grafana.internal/d/api-errors
+2. kubectl get pods -n production | grep -v Running
+3. kubectl logs -n production -l app=api --tail=100 | grep ERROR
+4. Check recent deployments: kubectl rollout history deployment/api -n production
+
+## Investigation
+# Is it a specific endpoint?
+curl https://api.example.com/health  # basic health
+kubectl exec -it api-pod -- curl localhost:3000/metrics | grep http_errors
+
+# Database issue?
+kubectl exec -it postgres-0 -- psql -U app -c "SELECT count(*) FROM pg_stat_activity WHERE state='active';"
+
+## Rollback (if recent deploy)
+kubectl rollout undo deployment/api -n production
+kubectl rollout status deployment/api -n production
+
+## Escalation
+- P1: Page on-call lead if not resolved in 15 min
+- Engage: backend team if root cause is in application code
+- Status page: Update https://status.example.com</code></pre>
+          <span class="lang-label">bash</span><button class="copy-btn">Copy</button></div>
+
+        <h3>Incident Command Structure</h3>
+        <table>
+          <tr><th>Role</th><th>Responsibility</th><th>Who</th></tr>
+          <tr><td>Incident Commander</td><td>Coordinate response, make go/no-go decisions, communicate status</td><td>On-call lead or senior SRE</td></tr>
+          <tr><td>Technical Lead</td><td>Diagnose root cause, direct technical investigation</td><td>Subject matter expert</td></tr>
+          <tr><td>Comms Lead</td><td>Update status page, internal stakeholders, customer comms</td><td>Designated per incident</td></tr>
+          <tr><td>Scribe</td><td>Real-time notes in incident channel — timeline of all actions</td><td>Anyone on bridge</td></tr>
+        </table>
+      
+</div>
     </div>
 
     <!-- C. SYSTEM DESIGN -->
@@ -638,7 +804,120 @@ spec:
       awsRegion: us-east-1
 </code></pre>
           <span class="lang-label">yaml</span><button class="copy-btn">Copy</button></div>
-      </div>
+        <h3>OPA Gatekeeper — Policy Enforcement in Cluster</h3>
+        <div class="pre-wrap"><pre><code"># Install Gatekeeper
+kubectl apply -f https://raw.githubusercontent.com/open-policy-agent/gatekeeper/release-3.14/deploy/gatekeeper.yaml
+
+# ── ConstraintTemplate: define a policy type ──
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: requireresourcelimits
+spec:
+  crd:
+    spec:
+      names:
+        kind: RequireResourceLimits
+  targets:
+  - target: admission.k8s.gatekeeper.sh
+    rego: |
+      package requireresourcelimits
+      violation[{"msg": msg}] {
+        container := input.review.object.spec.containers[_]
+        not container.resources.limits
+        msg := sprintf("Container %v missing resource limits", [container.name])
+      }
+
+# ── Constraint: apply the policy ──
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: RequireResourceLimits
+metadata:
+  name: must-have-limits
+spec:
+  enforcementAction: deny       # deny | dryrun | warn
+  match:
+    kinds:
+    - apiGroups: ["apps"]
+      kinds: ["Deployment"]
+    namespaces: ["production", "staging"]</code></pre>
+          <span class="lang-label">yaml</span><button class="copy-btn">Copy</button></div>
+
+        <h3>Node Affinity, Taints &amp; Tolerations</h3>
+        <div class="pre-wrap"><pre><code"># ── Taint a node (repel pods) ──
+kubectl taint nodes gpu-node hardware=gpu:NoSchedule
+kubectl taint nodes gpu-node hardware=gpu:NoSchedule-   # remove taint
+
+# ── Toleration (allow pod on tainted node) ──
+tolerations:
+- key: "hardware"
+  operator: "Equal"
+  value: "gpu"
+  effect: "NoSchedule"
+
+# ── Node Affinity (prefer or require specific nodes) ──
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: node.kubernetes.io/instance-type
+          operator: In
+          values: ["m5.xlarge", "m5.2xlarge"]
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 80
+      preference:
+        matchExpressions:
+        - key: topology.kubernetes.io/zone
+          operator: In
+          values: ["us-east-1a"]
+
+# ── Pod Anti-Affinity (spread across nodes) ──
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchLabels: { app: webapp }
+        topologyKey: kubernetes.io/hostname
+
+# ── PodDisruptionBudget ── guarantee min pods during node drain ──
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: webapp-pdb
+spec:
+  minAvailable: 2              # always keep at least 2 pods
+  # maxUnavailable: 1          # OR allow max 1 down at once
+  selector:
+    matchLabels: { app: webapp }</code></pre>
+          <span class="lang-label">yaml</span><button class="copy-btn">Copy</button></div>
+
+        <h3>Vertical Pod Autoscaler (VPA)</h3>
+        <div class="pre-wrap"><pre><code"># VPA automatically adjusts CPU/memory requests based on actual usage
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: webapp-vpa
+spec:
+  targetRef:
+    apiVersion: "apps/v1"
+    kind: Deployment
+    name: webapp
+  updatePolicy:
+    updateMode: "Auto"   # Auto | Recreate | Initial | Off
+  resourcePolicy:
+    containerPolicies:
+    - containerName: webapp
+      minAllowed:
+        cpu: 100m
+        memory: 128Mi
+      maxAllowed:
+        cpu: "4"
+        memory: 4Gi</code></pre>
+          <span class="lang-label">yaml</span><button class="copy-btn">Copy</button></div>
+      
+</div>
     </div>
 
     <!-- E. ISTIO -->
@@ -1197,7 +1476,88 @@ We will use EKS (managed Kubernetes) over ECS.
           <tr><td>Deploy frequency</td><td>&lt; 1x/week</td><td>Multiple times per day, different components</td></tr>
           <tr><td>Failure isolation</td><td>Full failure acceptable</td><td>Partial failure must be isolated</td></tr>
         </table>
-      </div>
+        <h3>Event-Driven Architecture Patterns</h3>
+        <div class="pre-wrap"><pre><code"># ── Kafka fundamentals ──
+# Topic    = named stream of events (like a table)
+# Partition = ordered, immutable sequence (parallelism unit)
+# Consumer Group = multiple consumers sharing partitions
+# Offset   = position in partition (consumer tracks this)
+
+# Kafka producer (Python)
+from kafka import KafkaProducer
+import json
+
+producer = KafkaProducer(
+    bootstrap_servers=['kafka:9092'],
+    value_serializer=lambda v: json.dumps(v).encode('utf-8')
+)
+
+producer.send('order-created', {
+    'orderId': '123',
+    'userId': '456',
+    'amount': 99.99
+})
+producer.flush()
+
+# ── Patterns ──
+# Saga Pattern: distributed transactions via events
+# Order Service → emits OrderCreated
+# → Payment Service consumes, emits PaymentProcessed or PaymentFailed
+# → Inventory Service consumes PaymentProcessed, emits InventoryReserved
+# → If any fails: compensating transactions reverse prior steps
+
+# CQRS: Command Query Responsibility Segregation
+# Commands (write) → Command Handler → Write DB (normalized)
+# Queries  (read)  → Query Handler  → Read DB (denormalized/cache)
+# Sync via events: write DB emits events → read DB subscribes + updates
+
+# Outbox Pattern (guaranteed event delivery)
+# 1. Within same DB transaction: write business record + event to outbox table
+# 2. Outbox poller reads unprocessed events
+# 3. Publishes to Kafka → marks as published
+# Guarantees: no event lost even if app crashes between write + publish</code></pre>
+          <span class="lang-label">python</span><button class="copy-btn">Copy</button></div>
+
+        <h3>Architecture Decision Records (ADR)</h3>
+        <div class="pre-wrap"><pre><code"># ADR template — docs/decisions/0005-use-kafka-for-events.md
+# Title: Use Kafka for Inter-Service Event Streaming
+# Date: 2024-03-15
+# Status: Accepted
+
+## Context
+# Our microservices need reliable async communication.
+# Current REST polling causes tight coupling and high latency.
+# We need replay capability and multiple consumers per event.
+
+## Decision
+# Use Apache Kafka (via AWS MSK) as our event streaming platform.
+# Each domain owns its topics. Events are the API contract.
+
+## Consequences
+# + Decoupled services, independent scaling
+# + Replay events for new consumers or debugging
+# + High throughput (millions of events/sec)
+# - Operational complexity (broker management, schema evolution)
+# - Eventual consistency model requires careful design
+# - Learning curve for team members unfamiliar with Kafka
+
+## Alternatives Considered
+# RabbitMQ: simpler but lacks replay, lower throughput
+# AWS SNS/SQS: AWS-only, no replay on SQS, limited ordering</code></pre>
+          <span class="lang-label">markdown</span><button class="copy-btn">Copy</button></div>
+
+        <h3>Reliability Patterns</h3>
+        <table>
+          <tr><th>Pattern</th><th>Problem Solved</th><th>Implementation</th></tr>
+          <tr><td>Circuit Breaker</td><td>Cascading failures when dependency is down</td><td>Open circuit after N failures; half-open probe after timeout</td></tr>
+          <tr><td>Retry with Backoff</td><td>Transient failures (network blip, rate limit)</td><td>Exponential backoff: 1s, 2s, 4s, 8s + jitter</td></tr>
+          <tr><td>Bulkhead</td><td>One bad consumer killing all threads</td><td>Separate thread pools per dependency</td></tr>
+          <tr><td>Timeout</td><td>Slow dependencies blocking resources forever</td><td>Always set timeouts on all external calls</td></tr>
+          <tr><td>Rate Limiting</td><td>Overloading services, protecting against abuse</td><td>Token bucket or sliding window per client</td></tr>
+          <tr><td>Dead Letter Queue</td><td>Poison pill messages blocking queue processing</td><td>Move failed messages to DLQ after N retries</td></tr>
+        </table>
+      
+</div>
     </div>
 
     <!-- PROJECTS -->
@@ -1271,7 +1631,16 @@ We will use EKS (managed Kubernetes) over ECS.
           <li style="font-size:.85rem;color:var(--text3);padding:.3rem 0;border-bottom:1px solid var(--border)">→ "Describe a time you convinced your team to adopt a new tool" — data-driven, proof of concept, phased rollout</li>
           <li style="font-size:.85rem;color:var(--text3);padding:.3rem 0">→ "How did you reduce cloud costs?" — specific %, tools used (Cost Explorer, Compute Optimizer), initiatives</li>
         </ul>
-      </div>
+          <div class="qa"><div class="qa-q">How do you design for high availability across multiple AWS regions? <span class="arrow">▼</span></div>
+            <div class="qa-a">Multi-region HA requires: 1) <strong>Active-Active or Active-Passive</strong> decision — active-active serves traffic from both regions simultaneously (lower latency globally) while active-passive has a standby that takes over on failure. 2) <strong>Route53 with health checks</strong> — latency-based or failover routing with endpoint health monitoring. 3) <strong>Data replication</strong> — Aurora Global Database (read across regions, &lt;1s RPO), DynamoDB Global Tables, or S3 Cross-Region Replication. 4) <strong>RTO/RPO targets</strong> drive architecture: RPO=0 needs synchronous replication (expensive, higher latency); RPO=5min allows async. 5) <strong>Traffic shifting</strong> — weighted Route53 records allow gradual cutover. Key challenge: distributed transactions and data consistency across regions require careful design (eventual consistency is the practical answer).</div></div>
+
+          <div class="qa"><div class="qa-q">Walk me through designing a zero-trust security architecture <span class="arrow">▼</span></div>
+            <div class="qa-a">Zero-trust: "never trust, always verify" — no implicit trust based on network location. Key components: 1) <strong>Identity-based access</strong> — every service has an identity (SPIFFE/SPIRE or AWS IAM role). mTLS everywhere via service mesh (Istio). 2) <strong>Least-privilege IAM</strong> — workload identity, no static credentials, short-lived tokens via IRSA (IAM Roles for Service Accounts) in EKS. 3) <strong>Network micro-segmentation</strong> — K8s NetworkPolicy, AWS Security Groups with specific rules, no broad "allow all" within VPC. 4) <strong>Secrets management</strong> — no secrets in env vars, environment variables sourced from Secrets Manager/Vault at runtime. 5) <strong>Audit everything</strong> — CloudTrail, K8s audit logs, all API calls logged. 6) <strong>Certificate rotation</strong> — automated with cert-manager, short TTL certs. Implementation: start with service mesh for mTLS, add OPA policies, then migrate to workload identity.</div></div>
+
+          <div class="qa"><div class="qa-q">How do you approach capacity planning for a new service? <span class="arrow">▼</span></div>
+            <div class="qa-a">Capacity planning process: 1) <strong>Define SLOs first</strong> — latency targets (p95, p99), availability %, throughput requirements. 2) <strong>Load test to find limits</strong> — use k6, Locust, or JMeter to ramp up to breaking point. Identify bottleneck (CPU, memory, DB connections, I/O). 3) <strong>Model growth</strong> — expected RPS growth over 6/12 months based on business projections. 4) <strong>Right-size with HPA</strong> — set requests to actual p50 usage, limits at p99. Configure HPA to scale at 70% CPU/memory. 5) <strong>Autoscaling buffers</strong> — ensure scale-out can happen before SLO breach (allow for pod startup time). 6) <strong>Node autoscaling</strong> — Cluster Autoscaler or Karpenter with diverse instance types. 7) <strong>Budget</strong> — RESERVED_INSTANCES for baseline + On-Demand/Spot for burst. Monitor via CloudWatch Container Insights or Prometheus. Review quarterly.</div></div>
+      
+</div>
     </div>
   </main>
 </div>
